@@ -464,6 +464,7 @@ Relevant properties:
 - `LookupColumnWidths`
 - `LookupIncludeBlankRow`
 - `LookupBlankCaption`
+- `LookupMaxRows`
 
 These are intended for:
 
@@ -484,6 +485,7 @@ f.LookupDisplayColumn = 2
 f.LookupIncludeBlankRow = True
 f.LookupBlankCaption = ""
 f.LookupColumnWidths = "0;1.5"""
+f.LookupMaxRows = 2500
 ```
 
 That tells the engine:
@@ -500,6 +502,9 @@ stateless Oracle pattern.
 
 Access ultimately decides which columns are visible from `ColumnWidths`, so
 `LookupDisplayColumn` is most useful when paired with `LookupColumnWidths`.
+
+`LookupMaxRows` defaults to `2500`. The helper applies that as an Oracle-side row
+limit and raises an error if more than the allowed number of rows are returned.
 
 
 ## 6A. Lookup helper routines
@@ -538,7 +543,8 @@ Ofm_LoadListControlBySql _
     2, _
     True, _
     "", _
-    "0;1.5"""
+    "0;1.5""", _
+    2500
 ```
 
 
@@ -626,6 +632,7 @@ f.LookupSql = Join(Array( _
 f.LookupBoundColumn = 1
 f.LookupDisplayColumn = 2
 f.LookupColumnWidths = "0;2.0;1.2"""
+f.LookupMaxRows = 2500
 ```
 
 Then load it with:

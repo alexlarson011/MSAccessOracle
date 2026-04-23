@@ -89,6 +89,7 @@ Option Explicit
 '     LookupColumnWidths
 '     LookupIncludeBlankRow
 '     LookupBlankCaption
+'     LookupMaxRows
 '
 '
 ' Helper methods
@@ -142,6 +143,7 @@ Option Explicit
 '     f.LookupBoundColumn = 1
 '     f.LookupDisplayColumn = 2
 '     f.LookupIncludeBlankRow = True
+'     f.LookupMaxRows = 250
 '
 ' Key field example:
 '
@@ -224,6 +226,7 @@ Private pLookupDisplayColumn As Long
 Private pLookupColumnWidths As String
 Private pLookupIncludeBlankRow As Boolean
 Private pLookupBlankCaption As String
+Private pLookupMaxRows As Long
 
 '------------------------------------------------------------------------------------
 ' Initialization
@@ -260,6 +263,7 @@ Private Sub Class_Initialize()
     pLookupColumnWidths = vbNullString
     pLookupIncludeBlankRow = False
     pLookupBlankCaption = vbNullString
+    pLookupMaxRows = 2500
 
 End Sub
 
@@ -516,6 +520,19 @@ End Property
 
 Public Property Let LookupBlankCaption(ByVal Value As String)
     pLookupBlankCaption = Nz(Value, vbNullString)
+End Property
+
+
+Public Property Get LookupMaxRows() As Long
+    LookupMaxRows = pLookupMaxRows
+End Property
+
+Public Property Let LookupMaxRows(ByVal Value As Long)
+    If Value <= 0 Then
+        pLookupMaxRows = 2500
+    Else
+        pLookupMaxRows = Value
+    End If
 End Property
 
 '------------------------------------------------------------------------------------

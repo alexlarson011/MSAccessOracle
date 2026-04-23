@@ -1091,6 +1091,20 @@ Private Function Ofm_BuildValueListRow(ByVal rowData As Object) As String
 
 End Function
 
+Private Function Ofm_WrapLookupSqlWithRowLimit(ByVal sSQL As String, ByVal maxRows As Long) As String
+
+    If maxRows <= 0 Then
+        Ofm_WrapLookupSqlWithRowLimit = sSQL
+    Else
+        Ofm_WrapLookupSqlWithRowLimit = _
+            "SELECT * FROM (" & vbCrLf & _
+            sSQL & vbCrLf & _
+            ") lookup_src " & _
+            "WHERE ROWNUM <= " & CStr(maxRows + 1)
+    End If
+
+End Function
+
 Private Sub Ofm_PrepareListControl( _
     ByVal ctl As Object, _
     ByVal columnCount As Long, _
@@ -1121,6 +1135,7 @@ Public Sub Ofm_LoadListControlBySql( _
     Optional ByVal includeBlankRow As Boolean = False, _
     Optional ByVal blankCaption As String = "", _
     Optional ByVal columnWidths As String = "", _
+    Optional ByVal maxRows As Long = 2500, _
     Optional ByVal dsn As String = "" _
 )
 
@@ -1128,7 +1143,6 @@ Public Sub Ofm_LoadListControlBySql( _
     Dim rowData As Object
     Dim ctl As Object
     Dim columnCount As Long
-    Dim lRowCount As Long
 
     If Len(Trim$(controlName)) = 0 Then
         Err.Raise vbObjectError + 5070, cModuleName & ".Ofm_LoadListControlBySql", "Control name cannot be blank."
@@ -1138,10 +1152,16 @@ Public Sub Ofm_LoadListControlBySql( _
         Err.Raise vbObjectError + 5071, cModuleName & ".Ofm_LoadListControlBySql", "Lookup SQL cannot be blank."
     End If
 
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - start: " & controlName
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - SQL: " & sSQL
-    Set rows = PTQ_GetRows(sSQL, dsn)
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - rows returned: " & rows.Count
+    If maxRows <= 0 Then maxRows = 2500
+
+    Set rows = PTQ_GetRows(Ofm_WrapLookupSqlWithRowLimit(sSQL, maxRows), dsn)
+
+    If rows.Count > maxRows Then
+        Err.Raise vbObjectError + 5074, cModuleName & ".Ofm_LoadListControlBySql", _
+                  "Lookup for control " & controlName & " returned " & CStr(rows.Count) & _
+                  " rows, which exceeds the configured limit of " & CStr(maxRows) & "."
+    End If
+
     Set ctl = frm.Controls(controlName)
 
     If rows.Count > 0 Then
@@ -1151,23 +1171,14 @@ Public Sub Ofm_LoadListControlBySql( _
     End If
 
     Call Ofm_PrepareListControl(ctl, columnCount, boundColumn, columnWidths)
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - control prepared"
 
     If includeBlankRow Then
         ctl.AddItem Ofm_BuildBlankValueListRow(columnCount, displayColumn, blankCaption)
-        Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - blank row added"
     End If
 
     For Each rowData In rows
         ctl.AddItem Ofm_BuildValueListRow(rowData)
-        lRowCount = lRowCount + 1
-
-        If lRowCount = 1 Or (lRowCount Mod 100) = 0 Then
-            Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - items added: " & lRowCount
-        End If
     Next rowData
-
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - complete: " & controlName
 
 End Sub
 
@@ -1196,6 +1207,7 @@ Public Sub Ofm_LoadLookupControl( _
         includeBlankRow:=fieldDef.LookupIncludeBlankRow, _
         blankCaption:=fieldDef.LookupBlankCaption, _
         columnWidths:=fieldDef.LookupColumnWidths, _
+        maxRows:=fieldDef.LookupMaxRows, _
         dsn:=dsn
 
 End Sub

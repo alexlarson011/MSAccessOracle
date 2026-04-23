@@ -255,15 +255,12 @@ End Function
 
 Private Function ResolveDefaultDSN(Optional ByVal sDSN As String = "") As String
 
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".ResolveDefaultDSN - input: [" & sDSN & "]"
     sDSN = Trim$(sDSN)
 
     If Len(sDSN) = 0 Then
-        Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".ResolveDefaultDSN - calling Get_DB_DSN"
         sDSN = Get_DB_DSN()
     End If
 
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".ResolveDefaultDSN - output: [" & sDSN & "]"
     ResolveDefaultDSN = sDSN
 
 End Function
@@ -445,9 +442,7 @@ Public Function Get_DB_Env() As String
 End Function
 
 Public Function Get_DB_DSN() As String
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_DB_DSN - start"
     Get_DB_DSN = Get_tblConn_Value("DSN", "")
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_DB_DSN - value: [" & Get_DB_DSN & "]"
 End Function
 
 Public Function Get_DB_DSN_Init() As String
@@ -520,9 +515,7 @@ Private Function Get_tblConn_Value(ByVal fieldName As String, ByVal DefaultValue
 
     On Error GoTo HandleErr
 
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_tblConn_Value - field: " & fieldName
     v = DLookup(fieldName, "tblConn")
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_tblConn_Value - DLookup returned"
 
     If IsNull(v) Then
         Get_tblConn_Value = DefaultValue
@@ -530,12 +523,9 @@ Private Function Get_tblConn_Value(ByVal fieldName As String, ByVal DefaultValue
         Get_tblConn_Value = CStr(v)
     End If
 
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_tblConn_Value - output: [" & Get_tblConn_Value & "]"
-
     Exit Function
 
 HandleErr:
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_tblConn_Value - ERROR " & Err.Number & ": " & Err.Description
     Get_tblConn_Value = DefaultValue
 
 End Function
@@ -944,23 +934,15 @@ Public Function PTQ_GetRows( _
     Dim rows As Collection
     Dim rowDict As Object
     Dim fld As DAO.Field
-    Dim lRowCount As Long
 
     On Error GoTo HandleErr
 
     sDSN = ResolveDefaultDSN(sDSN)
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - start"
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - DSN: " & sDSN
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - SQL: " & sSQL
 
     Set rows = New Collection
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - opening isolated CurrentDb"
     Set db = OpenIsolatedCurrentDb(ws)
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - creating passthrough QueryDef"
     Set qdfTemp = CreatePassthroughQueryDef(db, sDSN, sSQL, True)
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - opening snapshot recordset"
     Set rs = qdfTemp.OpenRecordset(dbOpenSnapshot)
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - recordset opened"
 
     Do While Not rs.EOF
         Set rowDict = CreateObject("Scripting.Dictionary")
@@ -971,16 +953,9 @@ Public Function PTQ_GetRows( _
         Next fld
 
         rows.Add rowDict
-        lRowCount = lRowCount + 1
-
-        If lRowCount = 1 Or (lRowCount Mod 100) = 0 Then
-            Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - rows materialized: " & lRowCount
-        End If
-
         rs.MoveNext
     Loop
 
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - complete, rows: " & lRowCount
     Set PTQ_GetRows = rows
 
 Cleanup:
@@ -995,7 +970,6 @@ Cleanup:
     Exit Function
 
 HandleErr:
-    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - ERROR " & Err.Number & ": " & Err.Description
     Err.Raise _
         vbObjectError + 1027, _
         cModuleName & ".PTQ_GetRows", _
