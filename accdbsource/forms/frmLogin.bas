@@ -228,11 +228,28 @@ Begin Form
                 End
                 Begin CommandButton
                     OverlapFlags =85
+                    Left =3660
+                    Top =2400
+                    Width =1560
+                    Height =300
+                    TabIndex =4
+                    Name ="btnChangePassword"
+                    Caption ="Change Password"
+                    OnClick ="[Event Procedure]"
+
+                    LayoutCachedLeft =3660
+                    LayoutCachedTop =2400
+                    LayoutCachedWidth =5220
+                    LayoutCachedHeight =2700
+                    Overlaps =1
+                End
+                Begin CommandButton
+                    OverlapFlags =85
                     Left =4020
                     Top =3000
                     Width =1200
                     Height =300
-                    TabIndex =4
+                    TabIndex =5
                     Name ="btnExit"
                     Caption ="Exit"
                     OnClick ="[Event Procedure]"
@@ -249,7 +266,7 @@ Begin Form
                     Top =3000
                     Width =1200
                     Height =300
-                    TabIndex =2
+                    TabIndex =3
                     Name ="btnHelp"
                     Caption ="Help"
                     OnClick ="[Event Procedure]"
@@ -275,7 +292,7 @@ Begin Form
                     LayoutCachedTop =1680
                     LayoutCachedWidth =5580
                     LayoutCachedHeight =1980
-                    TabIndex =8
+                    TabIndex =9
                 End
                 Begin TextBox
                     Enabled = NotDefault
@@ -289,7 +306,7 @@ Begin Form
                     Top =2640
                     Width =3600
                     Height =300
-                    TabIndex =5
+                    TabIndex =6
                     Name ="txtVersion"
                     ControlSource ="versionText"
 
@@ -317,7 +334,7 @@ Begin Form
                     Top =540
                     Width =3779
                     Height =720
-                    TabIndex =6
+                    TabIndex =7
                     Name ="txtHeader"
                     ControlSource ="headerText"
 
@@ -347,7 +364,7 @@ Begin Form
                     Height =360
                     FontSize =12
                     FontWeight =700
-                    TabIndex =7
+                    TabIndex =8
                     Name ="txtAppName"
                     ControlSource ="appDisplayName"
 

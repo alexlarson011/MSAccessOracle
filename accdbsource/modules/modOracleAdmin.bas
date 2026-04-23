@@ -22,6 +22,7 @@
 '     - validating tblConn configuration
 '     - validating DSN presence and DSN connectivity
 '     - exposing current Oracle user / role checks
+ '     - changing the current Oracle user's password
 '     - inspecting passthrough queries
 '     - reading passthrough query DSNs
 '     - bulk-updating passthrough query DSNs
@@ -47,6 +48,9 @@
 '     OracleAdmin_Get_ODBC_User
 '     OracleAdmin_Check_Oracle_User_Role
 '     OracleAdmin_Validate_Oracle_User_Role
+'
+' password helpers:
+'     OracleAdmin_ChangeCurrentUserPassword
 '
 ' switch environments
 '
@@ -334,6 +338,14 @@ End Sub
 ' Oracle user / role helpers
 '------------------------------------------------------------------------------------
 
+Private Function OracleAdmin_QuotedIdentifier(ByVal sIdentifier As String) As String
+    OracleAdmin_QuotedIdentifier = """" & Replace$(sIdentifier, """", """""") & """"
+End Function
+
+Private Function OracleAdmin_QuotedPasswordToken(ByVal sPassword As String) As String
+    OracleAdmin_QuotedPasswordToken = """" & Replace$(sPassword, """", """""") & """"
+End Function
+
 Public Function OracleAdmin_Get_ODBC_User() As String
     OracleAdmin_Get_ODBC_User = Get_ODBC_User()
 End Function
@@ -350,6 +362,94 @@ Public Sub OracleAdmin_Validate_Oracle_User_Role(ByVal sOracleRoleName As String
     End If
 
 End Sub
+
+Public Function OracleAdmin_ChangeCurrentUserPassword( _
+    ByVal sDSN As String, _
+    ByVal sUserName As String, _
+    ByVal sOldPassword As String, _
+    ByVal sNewPassword As String _
+) As String
+
+    Dim conn As Object
+    Dim rs As Object
+    Dim sAdoConn As String
+    Dim sValidatedOracleUser As String
+    Dim sAlterUserSql As String
+
+    On Error GoTo ErrHandler
+
+    sDSN = UCase$(Trim$(sDSN))
+    sUserName = UCase$(Trim$(sUserName))
+
+    If Len(sDSN) = 0 Then
+        Err.Raise vbObjectError + 2021, cModuleName & ".OracleAdmin_ChangeCurrentUserPassword", "DSN cannot be blank."
+    End If
+
+    If Len(sUserName) = 0 Then
+        Err.Raise vbObjectError + 2022, cModuleName & ".OracleAdmin_ChangeCurrentUserPassword", "User name cannot be blank."
+    End If
+
+    If Len(sOldPassword) = 0 Then
+        Err.Raise vbObjectError + 2023, cModuleName & ".OracleAdmin_ChangeCurrentUserPassword", "Current password cannot be blank."
+    End If
+
+    If Len(sNewPassword) = 0 Then
+        Err.Raise vbObjectError + 2024, cModuleName & ".OracleAdmin_ChangeCurrentUserPassword", "New password cannot be blank."
+    End If
+
+    sAdoConn = Get_ADO_Login_Conn_Str(sDSN, sUserName, sOldPassword)
+
+    Set conn = CreateObject("ADODB.Connection")
+    conn.Open sAdoConn
+
+    Set rs = conn.Execute("SELECT USER FROM DUAL")
+
+    If rs.EOF Then
+        Err.Raise vbObjectError + 2025, cModuleName & ".OracleAdmin_ChangeCurrentUserPassword", _
+                  "Unable to validate the Oracle user for the current password."
+    End If
+
+    sValidatedOracleUser = UCase$(Nz(rs.Fields(0).Value, vbNullString))
+
+    If Len(sValidatedOracleUser) = 0 Then
+        Err.Raise vbObjectError + 2026, cModuleName & ".OracleAdmin_ChangeCurrentUserPassword", _
+                  "Oracle returned a blank user name during password change."
+    End If
+
+    sAlterUserSql = _
+        "ALTER USER " & OracleAdmin_QuotedIdentifier(sValidatedOracleUser) & _
+        " IDENTIFIED BY " & OracleAdmin_QuotedPasswordToken(sNewPassword) & _
+        " REPLACE " & OracleAdmin_QuotedPasswordToken(sOldPassword)
+
+    conn.Execute sAlterUserSql
+
+    On Error Resume Next
+    rs.Close
+    conn.Close
+    On Error GoTo ErrHandler
+
+    Set conn = CreateObject("ADODB.Connection")
+    conn.Open Get_ADO_Login_Conn_Str(sDSN, sValidatedOracleUser, sNewPassword)
+
+    OracleAdmin_ChangeCurrentUserPassword = Get_ODBC_Conn_Str(sDSN, sValidatedOracleUser, sNewPassword)
+
+Cleanup:
+    On Error Resume Next
+    If Not rs Is Nothing Then
+        If rs.State <> 0 Then rs.Close
+    End If
+    Set rs = Nothing
+
+    If Not conn Is Nothing Then
+        If conn.State <> 0 Then conn.Close
+    End If
+    Set conn = Nothing
+    Exit Function
+
+ErrHandler:
+    Err.Raise Err.Number, cModuleName & ".OracleAdmin_ChangeCurrentUserPassword", Err.Description
+
+End Function
 
 '------------------------------------------------------------------------------------
 ' Switch environments

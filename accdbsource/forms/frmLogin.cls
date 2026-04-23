@@ -26,6 +26,7 @@ Attribute VB_Exposed = False
 '     - validating credentials using ADODB
 '     - storing the validated runtime Oracle connection string in modOracleSession
 '     - validating that Oracle passthrough access works after login
+'     - opening the Oracle password change form when requested
 '     - optionally opening the application menu or startup form
 '     - optionally allowing a machine-specific custom DSN override
 '     - presenting login-help messaging to users
@@ -76,6 +77,7 @@ Attribute VB_Exposed = False
 '
 '     - modIniConfig (or equivalent config module) if ALLOW_CUSTOM_DSN = True
 '     - Outlook automation if the Help button sends email
+'     - frmOraclePasswordChange for the custom password-update workflow
 '
 '
 ' Common callers
@@ -93,6 +95,7 @@ Attribute VB_Exposed = False
 '
 ' login flow:
 '     btnLogin_Click
+'     btnChangePassword_Click
 '
 ' exit / help:
 '     btnExit_Click
@@ -105,6 +108,9 @@ Attribute VB_Exposed = False
 '
 ' validation helpers:
 '     ValidateModuleConfiguration
+'
+' password helpers:
+'     OpenPasswordChangeDialog
 '
 '
 ' Configuration constants
@@ -182,6 +188,7 @@ Private Const HIDE_ACCESS_RIBBON As Boolean = False
 Private Const CRED_SOURCE_NAME As String = "[DATABASE NAME]"
 Private Const OPEN_FORM_ON_LOGIN As Boolean = True
 Private Const OPEN_FORM_NM As String = "FORM NAME"
+Private Const CHANGE_PASSWORD_FORM_NM As String = "frmOraclePasswordChange"
 Private Const POP_USERNM_ON_FORM As Boolean = True
 Private Const SHOW_ENV_NM As Boolean = False
 Private Const SHOW_DSN_NM As Boolean = True
@@ -306,6 +313,12 @@ Private Sub btnLogin_Click()
         If InStr(1, Err.Description, "ORA-28001", vbTextCompare) > 0 Then
             oraclePassExpired = True
             Err.Clear
+            On Error GoTo ErrHandler
+            MsgBox "Your " & CRED_SOURCE_NAME & " password is expired." & vbCrLf & vbCrLf & _
+                   "A custom password change form will open now. If the Oracle ODBC driver still requires its own password-change prompt, follow that prompt instead.", vbExclamation
+            OpenPasswordChangeDialog True
+            Me.txtPass.SetFocus
+            GoTo Cleanup
         Else
             MsgBox "ODBC connection attempt to " & CRED_SOURCE_NAME & " was unsuccessful." & vbCrLf & vbCrLf & _
                    Err.Description, vbCritical
@@ -414,6 +427,10 @@ ErrHandler:
 
 End Sub
 
+Private Sub btnChangePassword_Click()
+    OpenPasswordChangeDialog False
+End Sub
+
 Private Sub imgHelp_Click()
 
     MsgBox HELP_TXT, vbInformation
@@ -447,6 +464,23 @@ HandleErr:
     MsgBox "frmLogin configuration is invalid." & vbCrLf & vbCrLf & Err.Description, vbCritical
 
 End Function
+
+Private Sub OpenPasswordChangeDialog(Optional ByVal fromExpiredPassword As Boolean = False)
+
+    Dim sUserName As String
+    Dim sMode As String
+
+    sUserName = Trim$(Nz(Me.txtUser, vbNullString))
+
+    If fromExpiredPassword Then
+        sMode = "EXPIRED"
+    Else
+        sMode = "STANDARD"
+    End If
+
+    DoCmd.OpenForm CHANGE_PASSWORD_FORM_NM, , , , , acDialog, "USER=" & sUserName & ";MODE=" & sMode
+
+End Sub
 
 Private Sub UserManageCustomDSN()
 
