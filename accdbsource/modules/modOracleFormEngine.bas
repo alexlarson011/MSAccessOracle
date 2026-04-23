@@ -64,6 +64,7 @@
 '
 ' load / new-record helpers:
 '     Ofm_LoadForm
+'     Ofm_LoadFormBySql
 '     Ofm_InitNewForm
 '
 ' SQL builders:
@@ -97,9 +98,23 @@
 '     Set mOriginalValues = CreateObject("Scripting.Dictionary")
 '     Set f = Ofm_AddField(mFields, "PROJ_OPTN_ID", "PROJ_OPTN_ID", True, True, False)
 '
+' Joined read-model field example:
+'
+'     Set f = Ofm_AddField(mFields, "STATUS_CD", "txtStatusText", False, False, False)
+'     f.LoadFieldName = "STATUS_TEXT"
+'
 ' Load an existing record:
 '
 '     Ofm_LoadForm Me, Get_DB_DSN(), Get_DB_Schema(), cTableName, cKeyField, keyValue, mFields, mOriginalValues
+'
+' Load an existing record from arbitrary SQL:
+'
+'     Ofm_LoadFormBySql Me, Get_DB_DSN(), _
+'         "SELECT p.PROJ_ID, s.STATUS_TEXT " & _
+'         "FROM PROJECT p " & _
+'         "LEFT JOIN STATUS_LU s ON s.STATUS_CD = p.STATUS_CD " & _
+'         "WHERE p.PROJ_ID = " & Ofm_SqlValue(keyValue), _
+'         mFields, mOriginalValues
 '
 ' Initialize a new record:
 '
@@ -108,6 +123,14 @@
 ' Save:
 '
 '     savedKey = Ofm_SaveRecord(Me, Get_DB_DSN(), Get_DB_Schema(), cTableName, cKeyField, mFields, mOriginalValues, mIsNewRecord, cSequenceName, True)
+'
+' Save and reload from a read-model SQL statement:
+'
+'     savedKey = Ofm_SaveRecord(Me, Get_DB_DSN(), Get_DB_Schema(), cTableName, cKeyField, mFields, mOriginalValues, mIsNewRecord, cSequenceName, True, _
+'         "SELECT p.PROJ_ID, s.STATUS_TEXT " & _
+'         "FROM PROJECT p " & _
+'         "LEFT JOIN STATUS_LU s ON s.STATUS_CD = p.STATUS_CD " & _
+'         "WHERE p.PROJ_ID = [OFM_KEY_VALUE]")
 '
 ' Delete:
 '
@@ -142,6 +165,25 @@
 '     - Y / N
 '     - 1 / 0
 '     - Y / NULL
+'
+'
+' Read/write separation support
+' -----------------------------
+' This module can load a form from richer Oracle read models while still writing only
+' to the base table passed into the CRUD helpers.
+'
+' This is useful for highly normalized schemas where forms need lookup labels,
+' joined display values, or view-based reads, but inserts and updates should still
+' target one base table.
+'
+' Use:
+'
+'     - clsOracleFormField.LoadFieldName to map a returned column/alias to a control
+'     - Ofm_LoadFormBySql for arbitrary joined or aliased read SQL
+'     - Ofm_SaveRecord / Ofm_Insert / Ofm_Update reloadSql to refresh from a richer
+'       read model after save
+'
+' If reloadSql is supplied, [OFM_KEY_VALUE] is replaced with the saved key value.
 '
 '
 ' Dependencies
@@ -182,6 +224,7 @@ Option Compare Database
 Option Explicit
 
 Private Const cModuleName As String = "modOracleFormEngine"
+Private Const cReloadKeyToken As String = "[OFM_KEY_VALUE]"
 
 '------------------------------------------------------------------------------------
 ' Field definition helpers
@@ -270,7 +313,7 @@ Public Function Ofm_GetSelectList(ByRef fields As Collection) As String
 
     For Each f In fields
         If Len(s) > 0 Then s = s & ", "
-        s = s & f.DbFieldName
+        s = s & f.LoadFieldName
     Next f
 
     Ofm_GetSelectList = s
@@ -476,6 +519,69 @@ End Function
 ' Load / new-record helpers
 '------------------------------------------------------------------------------------
 
+Private Function Ofm_BuildLoadSql( _
+    ByVal schemaName As String, _
+    ByVal objectName As String, _
+    ByVal keyField As String, _
+    ByVal keyValue As Variant, _
+    ByRef fields As Collection _
+) As String
+
+    Ofm_BuildLoadSql = _
+        "SELECT " & Ofm_GetSelectList(fields) & " " & _
+        "FROM " & Ofm_GetQualifiedObjectName(schemaName, objectName) & " " & _
+        "WHERE " & keyField & " = " & Ofm_SqlValue(keyValue)
+
+End Function
+
+Private Function Ofm_ResolveReloadSql( _
+    ByVal schemaName As String, _
+    ByVal objectName As String, _
+    ByVal keyField As String, _
+    ByVal keyValue As Variant, _
+    ByRef fields As Collection, _
+    Optional ByVal reloadSql As String = "" _
+) As String
+
+    If Len(Trim$(reloadSql)) = 0 Then
+        Ofm_ResolveReloadSql = Ofm_BuildLoadSql(schemaName, objectName, keyField, keyValue, fields)
+    Else
+        Ofm_ResolveReloadSql = Replace$(reloadSql, cReloadKeyToken, Ofm_SqlValue(keyValue), , , vbTextCompare)
+    End If
+
+End Function
+
+Private Sub Ofm_LoadFormFromRow( _
+    ByRef frm As Access.Form, _
+    ByVal rowData As Object, _
+    ByRef fields As Collection, _
+    ByRef originalValues As Object, _
+    ByVal sourceProcName As String _
+)
+
+    Dim f As clsOracleFormField
+    Dim sLoadFieldName As String
+
+    If rowData Is Nothing Then
+        Err.Raise vbObjectError + 5020, sourceProcName, "No row found."
+    End If
+
+    For Each f In fields
+        sLoadFieldName = f.LoadFieldName
+
+        If rowData.Exists(sLoadFieldName) Then
+            Ofm_SetControlValue frm, f, rowData(sLoadFieldName)
+        Else
+            Err.Raise vbObjectError + 5021, sourceProcName, _
+                      "Returned row does not contain expected load field: " & sLoadFieldName & _
+                      " (control: " & f.ControlName & ")."
+        End If
+    Next f
+
+    Ofm_SnapshotValues frm, fields, originalValues
+
+End Sub
+
 Public Sub Ofm_LoadForm( _
     ByRef frm As Access.Form, _
     ByVal dsn As String, _
@@ -488,29 +594,35 @@ Public Sub Ofm_LoadForm( _
 )
 
     Dim sSQL As String
-    Dim rowData As Object
-    Dim f As clsOracleFormField
 
-    sSQL = "SELECT " & Ofm_GetSelectList(fields) & " " & _
-           "FROM " & Ofm_GetQualifiedObjectName(schemaName, tableName) & " " & _
-           "WHERE " & keyField & " = " & Ofm_SqlValue(keyValue)
+    sSQL = Ofm_BuildLoadSql(schemaName, tableName, keyField, keyValue, fields)
+
+    Ofm_LoadFormBySql frm, dsn, sSQL, fields, originalValues, cModuleName & ".Ofm_LoadForm"
+
+End Sub
+
+Public Sub Ofm_LoadFormBySql( _
+    ByRef frm As Access.Form, _
+    ByVal dsn As String, _
+    ByVal sSQL As String, _
+    ByRef fields As Collection, _
+    ByRef originalValues As Object, _
+    Optional ByVal sourceProcName As String = "" _
+)
+
+    Dim rowData As Object
+
+    If Len(Trim$(sSQL)) = 0 Then
+        Err.Raise vbObjectError + 5022, cModuleName & ".Ofm_LoadFormBySql", "Load SQL cannot be blank."
+    End If
+
+    If Len(sourceProcName) = 0 Then
+        sourceProcName = cModuleName & ".Ofm_LoadFormBySql"
+    End If
 
     Set rowData = PTQ_GetRow(dsn, sSQL)
 
-    If rowData Is Nothing Then
-        Err.Raise vbObjectError + 5020, cModuleName & ".Ofm_LoadForm", "No row found."
-    End If
-
-    For Each f In fields
-        If rowData.exists(f.DbFieldName) Then
-            Ofm_SetControlValue frm, f, rowData(f.DbFieldName)
-        Else
-            Err.Raise vbObjectError + 5021, cModuleName & ".Ofm_LoadForm", _
-                      "Returned row does not contain expected field: " & f.DbFieldName
-        End If
-    Next f
-
-    Ofm_SnapshotValues frm, fields, originalValues
+    Ofm_LoadFormFromRow frm, rowData, fields, originalValues, sourceProcName
 
 End Sub
 
@@ -693,10 +805,12 @@ Public Function Ofm_Insert( _
     ByRef fields As Collection, _
     ByRef originalValues As Object, _
     Optional ByVal sequenceName As String = "", _
-    Optional ByVal reloadAfterInsert As Boolean = True _
+    Optional ByVal reloadAfterInsert As Boolean = True, _
+    Optional ByVal reloadSql As String = "" _
 ) As Variant
 
     Dim sSQL As String
+    Dim sReloadSql As String
     Dim keyDef As clsOracleFormField
     Dim newKeyValue As Variant
 
@@ -719,7 +833,8 @@ Public Function Ofm_Insert( _
     PTQ_Execute dsn, sSQL
 
     If reloadAfterInsert Then
-        Ofm_LoadForm frm, dsn, schemaName, tableName, keyField, newKeyValue, fields, originalValues
+        sReloadSql = Ofm_ResolveReloadSql(schemaName, tableName, keyField, newKeyValue, fields, reloadSql)
+        Ofm_LoadFormBySql frm, dsn, sReloadSql, fields, originalValues, cModuleName & ".Ofm_Insert"
     Else
         Ofm_SnapshotValues frm, fields, originalValues
     End If
@@ -737,10 +852,12 @@ Public Sub Ofm_Update( _
     ByVal keyValue As Variant, _
     ByRef fields As Collection, _
     ByRef originalValues As Object, _
-    Optional ByVal reloadAfterUpdate As Boolean = True _
+    Optional ByVal reloadAfterUpdate As Boolean = True, _
+    Optional ByVal reloadSql As String = "" _
 )
 
     Dim sSQL As String
+    Dim sReloadSql As String
 
     Call Ofm_ValidateRequiredFields(frm, fields, True)
 
@@ -751,7 +868,8 @@ Public Sub Ofm_Update( _
     PTQ_Execute dsn, sSQL
 
     If reloadAfterUpdate Then
-        Ofm_LoadForm frm, dsn, schemaName, tableName, keyField, keyValue, fields, originalValues
+        sReloadSql = Ofm_ResolveReloadSql(schemaName, tableName, keyField, keyValue, fields, reloadSql)
+        Ofm_LoadFormBySql frm, dsn, sReloadSql, fields, originalValues, cModuleName & ".Ofm_Update"
     Else
         Ofm_SnapshotValues frm, fields, originalValues
     End If
@@ -783,7 +901,8 @@ Public Function Ofm_SaveRecord( _
     ByRef originalValues As Object, _
     ByVal isNewRecord As Boolean, _
     Optional ByVal sequenceName As String = "", _
-    Optional ByVal reloadAfterSave As Boolean = True _
+    Optional ByVal reloadAfterSave As Boolean = True, _
+    Optional ByVal reloadSql As String = "" _
 ) As Variant
 
     Dim keyDef As clsOracleFormField
@@ -801,7 +920,8 @@ Public Function Ofm_SaveRecord( _
             fields:=fields, _
             originalValues:=originalValues, _
             sequenceName:=sequenceName, _
-            reloadAfterInsert:=reloadAfterSave)
+            reloadAfterInsert:=reloadAfterSave, _
+            reloadSql:=reloadSql)
     Else
         keyValue = Ofm_GetControlValue(frm, keyDef)
 
@@ -819,7 +939,8 @@ Public Function Ofm_SaveRecord( _
             keyValue:=keyValue, _
             fields:=fields, _
             originalValues:=originalValues, _
-            reloadAfterUpdate:=reloadAfterSave
+            reloadAfterUpdate:=reloadAfterSave, _
+            reloadSql:=reloadSql
 
         Ofm_SaveRecord = keyValue
     End If

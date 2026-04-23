@@ -31,12 +31,16 @@ Option Explicit
 '     - update
 '     - checkbox / control value translation
 '
+' For forms that read from joined SQL or views, LoadFieldName can differ from
+' DbFieldName so the read model and write model do not have to be identical.
+'
 '
 ' Responsibilities
 ' ----------------
 ' Each clsOracleFormField instance can describe:
 '
 '     - database field name
+'     - load field name
 '     - form control name
 '     - whether the field is the key
 '     - whether the field is insertable
@@ -53,6 +57,7 @@ Option Explicit
 ' --------------
 ' mapping:
 '     DbFieldName
+'     LoadFieldName
 '     ControlName
 '
 ' CRUD behavior:
@@ -170,6 +175,7 @@ Option Explicit
 '------------------------------------------------------------------------------------
 
 Private pDbFieldName As String
+Private pLoadFieldName As String
 Private pControlName As String
 
 Private pIsKey As Boolean
@@ -198,6 +204,7 @@ Private pUseCustomBooleanMapping As Boolean
 Private Sub Class_Initialize()
 
     pDbFieldName = vbNullString
+    pLoadFieldName = vbNullString
     pControlName = vbNullString
 
     pIsKey = False
@@ -231,6 +238,20 @@ End Property
 
 Public Property Let DbFieldName(ByVal Value As String)
     pDbFieldName = Trim$(Nz(Value, vbNullString))
+End Property
+
+Public Property Get LoadFieldName() As String
+
+    If Len(pLoadFieldName) > 0 Then
+        LoadFieldName = pLoadFieldName
+    Else
+        LoadFieldName = pDbFieldName
+    End If
+
+End Property
+
+Public Property Let LoadFieldName(ByVal Value As String)
+    pLoadFieldName = Trim$(Nz(Value, vbNullString))
 End Property
 
 
@@ -419,8 +440,12 @@ Public Function IsValid() As Boolean
 
     IsValid = False
 
-    If Len(pDbFieldName) = 0 Then Exit Function
     If Len(pControlName) = 0 Then Exit Function
+    If Len(LoadFieldName) = 0 Then Exit Function
+
+    If pIsKey Or pIsInsertable Or pIsUpdatable Then
+        If Len(pDbFieldName) = 0 Then Exit Function
+    End If
 
     IsValid = True
 
@@ -517,6 +542,7 @@ Public Function DebugSummary() As String
 
     DebugSummary = _
         "DbFieldName=" & pDbFieldName & _
+        "; LoadFieldName=" & LoadFieldName & _
         "; ControlName=" & pControlName & _
         "; IsKey=" & CStr(pIsKey) & _
         "; IsInsertable=" & CStr(pIsInsertable) & _

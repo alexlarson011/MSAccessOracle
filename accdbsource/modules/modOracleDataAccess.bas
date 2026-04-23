@@ -24,6 +24,7 @@
 '     - executing passthrough scalar queries
 '     - executing passthrough action SQL
 '     - materializing query results into dictionaries / collections
+'     - materializing query results into case-insensitive dictionaries / collections
 '     - exposing typed scalar helpers
 '     - exposing Oracle helpers such as sequence NEXTVAL access
 '     - exposing SQL literal helper functions
@@ -99,6 +100,9 @@
 '
 '     Set rowData = PTQ_GetRow(Get_DB_DSN(), "SELECT col1, col2 FROM my_table WHERE id = 1")
 '
+' Returned row dictionaries use case-insensitive key lookup, which makes them
+' friendlier for aliased SQL and form-engine read models.
+'
 ' Sequence helper:
 '
 '     nextId = Oracle_GetNextSequenceValue(Get_DB_DSN(), Get_DB_Schema(), "my_seq")
@@ -155,6 +159,9 @@
 '     - form UI logic
 '     - linked-table relinking logic
 '     - business validation rules
+'
+' Row materialization is intentionally generic so callers can use aliased SELECT
+' lists without depending on exact Oracle column-name casing.
 '
 '
 ' Version
@@ -609,6 +616,7 @@ Public Function PTQ_GetRows( _
 
     Do While Not rs.EOF
         Set rowDict = CreateObject("Scripting.Dictionary")
+        rowDict.CompareMode = vbTextCompare
 
         For Each fld In rs.fields
             rowDict.Add fld.Name, fld.Value
