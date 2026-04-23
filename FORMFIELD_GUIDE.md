@@ -976,6 +976,47 @@ Actual write participation still comes from:
 
 ## 20. Debugging tips
 
+### Print a starter field scaffold from Oracle metadata
+
+If you already know the Oracle table you want to edit, you can generate a starter
+`ConfigureFields` routine directly to the Immediate Window:
+
+```vb
+Ofm_Debug_PrintFieldScaffold "APP_RECORD"
+```
+
+You can also be more explicit:
+
+```vb
+Ofm_Debug_PrintFieldScaffold _
+    tableName:="APP_RECORD", _
+    schemaName:="YOUR_SCHEMA", _
+    keyFieldName:="RECORD_ID", _
+    sequenceName:="APP_RECORD_SEQ"
+```
+
+What it does:
+
+- reads Oracle column metadata from the data dictionary
+- tries to infer a single-column primary key
+- prints a copy/paste-ready `ConfigureFields` routine
+- sets conservative starter defaults like:
+  - `OracleDataType`
+  - `Description` from column comments
+  - `IsRequired = True` for non-nullable columns
+  - `TrimOnSave = True` for string columns
+  - `NullIfBlank = True` for nullable string columns
+- adds a review note for likely `Y/N` flag columns
+
+What it does not do:
+
+- build controls on the Access form
+- guess lookup combos
+- guess joined read-model fields
+- solve composite primary keys automatically
+
+Treat the generated output as a starting point, not final code.
+
 ### Inspect one field definition
 
 ```vb

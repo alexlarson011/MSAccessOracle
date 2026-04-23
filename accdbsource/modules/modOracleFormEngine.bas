@@ -81,6 +81,7 @@
 '     Ofm_SaveRecord
 '
 ' debugging:
+'     Ofm_Debug_PrintFieldScaffold
 '     Ofm_DebugFieldSummary
 '
 '
@@ -135,6 +136,10 @@
 ' Delete:
 '
 '     Ofm_Delete Get_DB_Schema(), cTableName, cKeyField, Me!PROJ_OPTN_ID
+'
+' Print a starter ConfigureFields routine to the Immediate Window:
+'
+'     Ofm_Debug_PrintFieldScaffold "APP_RECORD"
 '
 ' The CRUD/load helpers place the main form and business inputs first and accept
 ' DSN as an optional final argument. If omitted, DSN defaults to Get_DB_DSN().
@@ -228,6 +233,310 @@ Option Explicit
 
 Private Const cModuleName As String = "modOracleFormEngine"
 Private Const cReloadKeyToken As String = "[OFM_KEY_VALUE]"
+
+'------------------------------------------------------------------------------------
+' Metadata / scaffolding helpers
+'------------------------------------------------------------------------------------
+
+Private Function Ofm_ResolveScaffoldSchemaName(ByVal schemaName As String) As String
+
+    schemaName = UCase$(Trim$(schemaName))
+
+    If Len(schemaName) = 0 Then
+        schemaName = UCase$(Trim$(Get_DB_Schema()))
+    End If
+
+    If Len(schemaName) = 0 Then
+        schemaName = UCase$(Trim$(Get_ODBC_User()))
+    End If
+
+    Ofm_ResolveScaffoldSchemaName = schemaName
+
+End Function
+
+Private Function Ofm_VbaStringLiteral(ByVal sValue As String) As String
+    Ofm_VbaStringLiteral = Replace$(sValue, """", """""")
+End Function
+
+Private Function Ofm_IsStringDataType(ByVal dataType As String) As Boolean
+
+    dataType = UCase$(Trim$(dataType))
+
+    Select Case dataType
+        Case "CHAR", "NCHAR", "VARCHAR2", "NVARCHAR2", "VARCHAR", "CLOB", "NCLOB"
+            Ofm_IsStringDataType = True
+    End Select
+
+End Function
+
+Private Function Ofm_IsYesNoFlagColumn(ByVal columnName As String, ByVal dataType As String) As Boolean
+
+    columnName = UCase$(Trim$(columnName))
+    dataType = UCase$(Trim$(dataType))
+
+    If Not Ofm_IsStringDataType(dataType) Then Exit Function
+
+    If Right$(columnName, 3) = "_YN" _
+       Or Right$(columnName, 5) = "_FLAG" _
+       Or Right$(columnName, 5) = "_INDC" Then
+        Ofm_IsYesNoFlagColumn = True
+    End If
+
+End Function
+
+Private Function Ofm_GetPrimaryKeyColumns( _
+    ByVal schemaName As String, _
+    ByVal tableName As String, _
+    Optional ByVal dsn As String = "" _
+) As Collection
+
+    Dim sSQL As String
+    Dim currentUser As String
+
+    schemaName = Ofm_ResolveScaffoldSchemaName(schemaName)
+    tableName = UCase$(Trim$(tableName))
+    currentUser = UCase$(Trim$(Get_ODBC_User()))
+
+    If Len(tableName) = 0 Then
+        Err.Raise vbObjectError + 5060, cModuleName & ".Ofm_GetPrimaryKeyColumns", "Table name cannot be blank."
+    End If
+
+    If Len(schemaName) = 0 Or StrComp(schemaName, currentUser, vbTextCompare) = 0 Then
+        sSQL = _
+            "SELECT ucc.column_name " & _
+            "FROM user_constraints uc " & _
+            "INNER JOIN user_cons_columns ucc " & _
+            "    ON ucc.constraint_name = uc.constraint_name " & _
+            "WHERE uc.constraint_type = 'P' " & _
+            "  AND uc.table_name = '" & SqlTextLiteral(tableName) & "' " & _
+            "ORDER BY ucc.position"
+    Else
+        sSQL = _
+            "SELECT acc.column_name " & _
+            "FROM all_constraints ac " & _
+            "INNER JOIN all_cons_columns acc " & _
+            "    ON acc.owner = ac.owner " & _
+            "   AND acc.constraint_name = ac.constraint_name " & _
+            "WHERE ac.constraint_type = 'P' " & _
+            "  AND ac.owner = '" & SqlTextLiteral(schemaName) & "' " & _
+            "  AND ac.table_name = '" & SqlTextLiteral(tableName) & "' " & _
+            "ORDER BY acc.position"
+    End If
+
+    Set Ofm_GetPrimaryKeyColumns = PTQ_GetRows(sSQL, dsn)
+
+End Function
+
+Private Function Ofm_GetSinglePrimaryKeyFieldName( _
+    ByVal schemaName As String, _
+    ByVal tableName As String, _
+    Optional ByVal dsn As String = "" _
+) As String
+
+    Dim pkRows As Collection
+
+    Set pkRows = Ofm_GetPrimaryKeyColumns(schemaName, tableName, dsn)
+
+    If pkRows.Count = 1 Then
+        Ofm_GetSinglePrimaryKeyFieldName = CStr(pkRows(1)("COLUMN_NAME"))
+    End If
+
+End Function
+
+Private Function Ofm_GetTableColumnMetadata( _
+    ByVal schemaName As String, _
+    ByVal tableName As String, _
+    Optional ByVal dsn As String = "" _
+) As Collection
+
+    Dim sSQL As String
+    Dim currentUser As String
+    Dim rows As Collection
+
+    schemaName = Ofm_ResolveScaffoldSchemaName(schemaName)
+    tableName = UCase$(Trim$(tableName))
+    currentUser = UCase$(Trim$(Get_ODBC_User()))
+
+    If Len(tableName) = 0 Then
+        Err.Raise vbObjectError + 5061, cModuleName & ".Ofm_GetTableColumnMetadata", "Table name cannot be blank."
+    End If
+
+    If Len(schemaName) = 0 Or StrComp(schemaName, currentUser, vbTextCompare) = 0 Then
+        sSQL = _
+            "SELECT utc.column_name, " & _
+            "       utc.data_type, " & _
+            "       utc.nullable, " & _
+            "       NVL(utc.data_default, '') AS data_default, " & _
+            "       utc.column_id, " & _
+            "       NVL(ucc.comments, '') AS comments " & _
+            "FROM user_tab_columns utc " & _
+            "LEFT JOIN user_col_comments ucc " & _
+            "    ON ucc.table_name = utc.table_name " & _
+            "   AND ucc.column_name = utc.column_name " & _
+            "WHERE utc.table_name = '" & SqlTextLiteral(tableName) & "' " & _
+            "ORDER BY utc.column_id"
+    Else
+        sSQL = _
+            "SELECT atc.column_name, " & _
+            "       atc.data_type, " & _
+            "       atc.nullable, " & _
+            "       NVL(atc.data_default, '') AS data_default, " & _
+            "       atc.column_id, " & _
+            "       NVL(acc.comments, '') AS comments " & _
+            "FROM all_tab_columns atc " & _
+            "LEFT JOIN all_col_comments acc " & _
+            "    ON acc.owner = atc.owner " & _
+            "   AND acc.table_name = atc.table_name " & _
+            "   AND acc.column_name = atc.column_name " & _
+            "WHERE atc.owner = '" & SqlTextLiteral(schemaName) & "' " & _
+            "  AND atc.table_name = '" & SqlTextLiteral(tableName) & "' " & _
+            "ORDER BY atc.column_id"
+    End If
+
+    Set rows = PTQ_GetRows(sSQL, dsn)
+
+    If rows.Count = 0 Then
+        Err.Raise vbObjectError + 5062, cModuleName & ".Ofm_GetTableColumnMetadata", _
+                  "No Oracle columns were found for " & Ofm_GetQualifiedObjectName(schemaName, tableName) & "."
+    End If
+
+    Set Ofm_GetTableColumnMetadata = rows
+
+End Function
+
+Public Sub Ofm_Debug_PrintFieldScaffold( _
+    ByVal tableName As String, _
+    Optional ByVal schemaName As String = "", _
+    Optional ByVal keyFieldName As String = "", _
+    Optional ByVal sequenceName As String = "", _
+    Optional ByVal dsn As String = "" _
+)
+
+    Dim schemaNameResolved As String
+    Dim pkRows As Collection
+    Dim columnRows As Collection
+    Dim rowData As Object
+    Dim columnName As String
+    Dim dataType As String
+    Dim nullableFlag As String
+    Dim commentText As String
+    Dim isKey As Boolean
+    Dim isRequired As Boolean
+    Dim isStringField As Boolean
+    Dim lineText As String
+
+    tableName = UCase$(Trim$(tableName))
+    schemaNameResolved = Ofm_ResolveScaffoldSchemaName(schemaName)
+    keyFieldName = UCase$(Trim$(keyFieldName))
+    sequenceName = UCase$(Trim$(sequenceName))
+
+    If Len(tableName) = 0 Then
+        Err.Raise vbObjectError + 5063, cModuleName & ".Ofm_Debug_PrintFieldScaffold", "Table name cannot be blank."
+    End If
+
+    Set pkRows = Ofm_GetPrimaryKeyColumns(schemaNameResolved, tableName, dsn)
+
+    If Len(keyFieldName) = 0 Then
+        keyFieldName = Ofm_GetSinglePrimaryKeyFieldName(schemaNameResolved, tableName, dsn)
+    End If
+
+    Set columnRows = Ofm_GetTableColumnMetadata(schemaNameResolved, tableName, dsn)
+
+    Debug.Print String$(90, "=")
+    Debug.Print "' clsOracleFormField scaffold for " & Ofm_GetQualifiedObjectName(schemaNameResolved, tableName)
+    Debug.Print "' Generated by " & cModuleName & ".Ofm_Debug_PrintFieldScaffold on " & Format$(Now, "yyyy-mm-dd hh:nn:ss")
+    Debug.Print String$(90, "=")
+    Debug.Print "Private Const cTableName As String = """ & tableName & """"
+
+    If Len(keyFieldName) > 0 Then
+        Debug.Print "Private Const cKeyField As String = """ & keyFieldName & """"
+    Else
+        Debug.Print "' No single-column primary key was inferred. Set cKeyField manually if needed."
+    End If
+
+    If Len(sequenceName) > 0 Then
+        Debug.Print "Private Const cSequenceName As String = """ & sequenceName & """"
+    Else
+        Debug.Print "' Optional: Private Const cSequenceName As String = """ & tableName & "_SEQ"""
+    End If
+
+    Debug.Print ""
+    Debug.Print "Private Sub ConfigureFields()"
+    Debug.Print ""
+    Debug.Print "    Dim f As clsOracleFormField"
+    Debug.Print ""
+
+    For Each rowData In columnRows
+
+        columnName = UCase$(Trim$(Nz(rowData("COLUMN_NAME"), vbNullString)))
+        dataType = UCase$(Trim$(Nz(rowData("DATA_TYPE"), vbNullString)))
+        nullableFlag = UCase$(Trim$(Nz(rowData("NULLABLE"), vbNullString)))
+        commentText = Trim$(Nz(rowData("COMMENTS"), vbNullString))
+        isKey = (Len(keyFieldName) > 0 And StrComp(columnName, keyFieldName, vbTextCompare) = 0)
+        isRequired = (nullableFlag = "N")
+        isStringField = Ofm_IsStringDataType(dataType)
+
+        If isKey Then
+            lineText = "    Set f = Ofm_AddField(mFields, """ & columnName & """, """ & columnName & """, True, True, False)"
+        Else
+            lineText = "    Set f = Ofm_AddField(mFields, """ & columnName & """, """ & columnName & """)"
+        End If
+
+        Debug.Print lineText
+        Debug.Print "    f.OracleDataType = """ & Ofm_VbaStringLiteral(dataType) & """"
+
+        If Len(commentText) > 0 Then
+            Debug.Print "    f.Description = """ & Ofm_VbaStringLiteral(commentText) & """"
+        End If
+
+        If isKey Then
+            Debug.Print "    f.IsKey = True"
+            Debug.Print "    f.IsUpdatable = False"
+            If Len(sequenceName) > 0 Then
+                Debug.Print "    f.IsDbGenerated = True"
+            End If
+        End If
+
+        If isRequired Then
+            Debug.Print "    f.IsRequired = True"
+        End If
+
+        If isStringField Then
+            Debug.Print "    f.TrimOnSave = True"
+            If Not isRequired Then
+                Debug.Print "    f.NullIfBlank = True"
+            End If
+        End If
+
+        If Ofm_IsYesNoFlagColumn(columnName, dataType) Then
+            Debug.Print "    ' Review: this looks like a Y/N-style flag field."
+            Debug.Print "    f.ControlKind = ""CHECKBOX"""
+            Debug.Print "    f.UseCustomBooleanMapping = True"
+            Debug.Print "    f.CheckedValue = ""Y"""
+            Debug.Print "    f.UncheckedValue = ""N"""
+        End If
+
+        Debug.Print ""
+    Next rowData
+
+    Debug.Print "End Sub"
+    Debug.Print ""
+
+    If pkRows.Count = 0 Then
+        Debug.Print "' Note: no primary-key metadata was found."
+    ElseIf pkRows.Count > 1 Then
+        Debug.Print "' Note: a composite primary key was found. The current form engine expects one key field."
+        Debug.Print "' Primary-key columns:"
+        For Each rowData In pkRows
+            Debug.Print "'     " & CStr(rowData("COLUMN_NAME"))
+        Next rowData
+        Debug.Print "' Choose a strategy manually before using Ofm_SaveRecord / Ofm_LoadForm."
+    End If
+
+    Debug.Print "' Review the generated defaults before using them in a form."
+    Debug.Print String$(90, "=")
+
+End Sub
 
 '------------------------------------------------------------------------------------
 ' Field definition helpers
