@@ -29,7 +29,7 @@ Attribute VB_Exposed = False
 '     - collecting and confirming a new Oracle password
 '     - validating the entered values
 '     - calling OracleAdmin_ChangeCurrentUserPassword
-'     - updating frmLogin controls when launched from the login flow
+'     - optionally updating frmLogin user context when launched from the login flow
 '     - optionally refreshing the runtime Oracle session credentials
 '     - reading launch context from OpenArgs
 '
@@ -160,8 +160,7 @@ Private Sub btnUpdatePassword_Click()
 
     If CurrentProject.AllForms("frmLogin").IsLoaded Then
         Forms("frmLogin").Controls("txtUser").Value = sUserName
-        Forms("frmLogin").Controls("txtPass").Value = sNewPassword
-        MsgBox "Oracle password updated. The login form has been updated with your new password. Click Login to continue.", vbInformation
+        MsgBox "Oracle password updated. Return to the login form and enter your new password to continue.", vbInformation
     Else
         g_OracleConnectionString = sRuntimeConn
         g_OracleSessionUser = sUserName
