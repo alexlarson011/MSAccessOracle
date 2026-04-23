@@ -4,8 +4,8 @@
     "Description": "Database connections used within the project used to prime Access' internal cache during import."
   },
   "Items": {
-    "ODBC;DSN=MY_DATA_SOURCE": {
-      "ODBC;DSN=MY_DATA_SOURCE": "ptqTest"
+    "ODBC;DSN=WHSD": {
+      "ODBC;DSN=WHSD": "ptqTest"
     }
   }
 }

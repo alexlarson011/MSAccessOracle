@@ -1,7 +1,7 @@
 ﻿{
   "Info": {
     "AddinVersion": "4.1.2",
-    "AccessVersion": "16.0 64-bit"
+    "AccessVersion": "16.0 32-bit"
   },
   "Options": {
     "ExportFolder": "\\accdbsource",
@@ -42,9 +42,6 @@
     "SanitizeLevel": 2,
     "ExtractThemeFiles": false,
     "TablesToExportData": {
-      "tblConn": {
-        "Format": "XML Format"
-      },
       "USysRegInfo": {
         "Format": "Tab Delimited"
       },

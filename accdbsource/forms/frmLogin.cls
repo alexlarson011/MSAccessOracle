@@ -184,20 +184,17 @@ Option Explicit
 
 '--------------Options-------------
 Private Const APP_DISPLAY_NAME As String = "[APP TITLE]"
+Private Const LOGIN_FORM_CAPTION = "Login"
 Private Const HIDE_ACCESS_RIBBON As Boolean = False
-Private Const CRED_SOURCE_NAME As String = "[DATABASE NAME]"
-Private Const OPEN_FORM_ON_LOGIN As Boolean = True
-Private Const OPEN_FORM_NM As String = "FORM NAME"
+Private Const OPEN_FORM_ON_LOGIN As Boolean = False
+Private Const OPEN_FORM_NM As String = "frmMain"
 Private Const CHANGE_PASSWORD_FORM_NM As String = "frmOraclePasswordChange"
-Private Const POP_USERNM_ON_FORM As Boolean = True
+Private Const POP_WINDOWS_USERNM_ON_FORM As Boolean = False
 Private Const SHOW_ENV_NM As Boolean = False
-Private Const SHOW_DSN_NM As Boolean = True
 Private Const ALLOW_CUSTOM_DSN As Boolean = False
 Private Const SHOW_LOGIN_MSGBOX As Boolean = False
 Private Const SHOW_HELP_BTN As Boolean = True
-Private Const HELP_TXT As String = "Enter your [DATABASE NAME] password here."
 Private Const HELP_EMAIL_ADDR As String = "[HELPEMAIL@HELP.DOMAIN]"
-Private Const HELP_BTN_TXT As String = "For assistance with logging in to [DATABASE NAME] please contact " & HELP_EMAIL_ADDR & "."
 Private Const PROMPT_SENDEMAIL As Boolean = True
 '----------------------------------
 
@@ -231,6 +228,8 @@ Private Sub Form_Open(Cancel As Integer)
         End If
     End If
 
+    Me.Caption = LOGIN_FORM_CAPTION
+
     appNameText = APP_DISPLAY_NAME
     If SHOW_ENV_NM Then
         If UCase$(Get_DB_Env()) <> "PROD" Then
@@ -240,7 +239,7 @@ Private Sub Form_Open(Cancel As Integer)
 
     Me.txtAppName.ControlSource = "=""" & appNameText & """"
 
-    textValue = "Enter your " & CRED_SOURCE_NAME & " credentials to sign in:"
+    textValue = "Enter your " & Get_DB_DSN() & " credentials to sign in:"
     Me.txtHeader.ControlSource = "=""" & textValue & """"
 
     If Len(Nz(versionValue, vbNullString)) > 0 Then
@@ -251,7 +250,7 @@ Private Sub Form_Open(Cancel As Integer)
         Me.txtVersion.Visible = False
     End If
 
-    If SHOW_DSN_NM Then
+    If ALLOW_CUSTOM_DSN Then
         Me.lblDSNName.Caption = Get_DB_DSN()
         Me.lblDSNName.Visible = True
         If Not Me.txtVersion.Visible Then
@@ -261,10 +260,10 @@ Private Sub Form_Open(Cancel As Integer)
         Me.lblDSNName.Visible = False
     End If
 
-    Me.imgHelp.ControlTipText = HELP_TXT
+    Me.imgHelp.ControlTipText = "Enter your " & Get_DB_DSN() & " password here."
     Me.btnHelp.Visible = SHOW_HELP_BTN
 
-    If POP_USERNM_ON_FORM Then
+    If POP_WINDOWS_USERNM_ON_FORM Then
         Me.txtUser = UCase$(Environ$("USERNAME"))
         Me.txtPass.SetFocus
     Else
@@ -314,13 +313,13 @@ Private Sub btnLogin_Click()
             oraclePassExpired = True
             Err.Clear
             On Error GoTo ErrHandler
-            MsgBox "Your " & CRED_SOURCE_NAME & " password is expired." & vbCrLf & vbCrLf & _
+            MsgBox "Your " & Get_DB_DSN() & " password is expired." & vbCrLf & vbCrLf & _
                    "A custom password change form will open now. If the Oracle ODBC driver still requires its own password-change prompt, follow that prompt instead.", vbExclamation
             OpenPasswordChangeDialog True
             Me.txtPass.SetFocus
             GoTo Cleanup
         Else
-            MsgBox "ODBC connection attempt to " & CRED_SOURCE_NAME & " was unsuccessful." & vbCrLf & vbCrLf & _
+            MsgBox "ODBC connection attempt to " & Get_DB_DSN() & " was unsuccessful." & vbCrLf & vbCrLf & _
                    Err.Description, vbCritical
             Me.txtPass.SetFocus
             GoTo Cleanup
@@ -330,7 +329,7 @@ Private Sub btnLogin_Click()
     On Error GoTo ErrHandler
 
     If oraclePassExpired Then
-        MsgBox "Your " & CRED_SOURCE_NAME & " password is expired. Please complete the Oracle password change dialog when prompted.", vbExclamation
+        MsgBox "Your " & Get_DB_DSN() & " password is expired. Please complete the Oracle password change dialog when prompted.", vbExclamation
     End If
 
     ' Store runtime session connection string
@@ -357,7 +356,7 @@ Private Sub btnLogin_Click()
     DoCmd.Close acForm, Me.Name, acSaveNo
 
     If SHOW_LOGIN_MSGBOX Then
-        MsgBox "Login to " & CRED_SOURCE_NAME & " (" & Get_DB_DSN() & ") successful!", vbInformation
+        MsgBox "Login to " & Get_DB_DSN() & " (" & Get_DB_DSN() & ") successful!", vbInformation
     End If
 
     If OPEN_FORM_ON_LOGIN Then
@@ -400,7 +399,7 @@ Private Sub btnHelp_Click()
 
     On Error GoTo ErrHandler
 
-    MsgBox HELP_BTN_TXT, vbInformation
+    MsgBox "For assistance with logging in to " & Get_DB_DSN() & " please contact " & HELP_EMAIL_ADDR & ".", vbInformation
 
     If Not PROMPT_SENDEMAIL Then Exit Sub
 
@@ -411,7 +410,7 @@ Private Sub btnHelp_Click()
         Set emailItem = outlookApp.CreateItem(0)
 
         emailItem.To = HELP_EMAIL_ADDR
-        emailItem.Subject = CRED_SOURCE_NAME & " login assistance"
+        emailItem.Subject = Get_DB_DSN() & " login assistance"
         emailItem.Body = "Please enter the details of your issue here."
         emailItem.Display
     End If
@@ -433,7 +432,7 @@ End Sub
 
 Private Sub imgHelp_Click()
 
-    MsgBox HELP_TXT, vbInformation
+    MsgBox "Enter your " & Get_DB_DSN() & " password here.", vbInformation
 
 End Sub
 

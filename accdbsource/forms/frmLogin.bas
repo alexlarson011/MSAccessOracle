@@ -23,10 +23,10 @@ Begin Form
     Width =5580
     DatasheetFontHeight =11
     ItemSuffix =19
-    Left =-23988
-    Top =3012
-    Right =-6768
-    Bottom =15984
+    Left =-28140
+    Top =3024
+    Right =-22308
+    Bottom =6432
     RecSrcDt = Begin
         0x9d7a7cfb941fe640
     End
@@ -228,16 +228,16 @@ Begin Form
                 End
                 Begin CommandButton
                     OverlapFlags =85
-                    Left =3660
+                    Left =4020
                     Top =2400
-                    Width =1560
+                    Width =1200
                     Height =300
                     TabIndex =3
                     Name ="btnChangePassword"
                     Caption ="Change Password"
                     OnClick ="[Event Procedure]"
 
-                    LayoutCachedLeft =3660
+                    LayoutCachedLeft =4020
                     LayoutCachedTop =2400
                     LayoutCachedWidth =5220
                     LayoutCachedHeight =2700
