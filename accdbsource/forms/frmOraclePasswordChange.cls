@@ -31,6 +31,7 @@ Attribute VB_Exposed = False
 '     - calling OracleAdmin_ChangeCurrentUserPassword
 '     - updating frmLogin controls when launched from the login flow
 '     - optionally refreshing the runtime Oracle session credentials
+'     - reading launch context from OpenArgs
 '
 '
 ' Dependencies
@@ -40,6 +41,28 @@ Attribute VB_Exposed = False
 '     - modOracleAdmin
 '     - modOracleDataAccess
 '     - modOracleSession
+'
+'
+' Key form events / procedures
+' ----------------------------
+' form lifecycle:
+'     Form_Open
+'
+' password change flow:
+'     btnUpdatePassword_Click
+'     btnCancel_Click
+'
+' helpers:
+'     GetOpenArgValue
+'
+'
+' Expired-password note
+' ---------------------
+' This form can be launched from frmLogin when Oracle reports an expired password.
+'
+' In some Oracle ODBC environments, expired-password handling may still require the
+' driver's own built-in password-change prompt. This form surfaces that fallback
+' explicitly when the custom workflow is not allowed to complete.
 '
 '
 ' Version

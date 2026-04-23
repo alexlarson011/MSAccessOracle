@@ -24,6 +24,8 @@ Attribute VB_Exposed = False
 '     - displaying application name / version / environment information
 '     - prompting the user for Oracle credentials
 '     - validating credentials using ADODB
+'     - classifying common Oracle / ODBC login failures for the user
+'     - displaying login status and failure reasons in the form UI
 '     - storing the validated runtime Oracle connection string in modOracleSession
 '     - validating that Oracle passthrough access works after login
 '     - opening the Oracle password change form when requested
@@ -42,7 +44,9 @@ Attribute VB_Exposed = False
 '     2. frmLogin creates a temporary ADODB connection to validate them
 '     3. If login succeeds, the credentialed connection string is stored in
 '        modOracleSession
-'     4. modOracleDataAccess passthrough helpers then reuse that runtime connection
+'     4. frmLogin verifies the authenticated Oracle user directly from that ADO
+'        connection
+'     5. modOracleDataAccess query helpers then reuse the runtime connection
 '        string for the life of the Access session
 '
 ' Important:
@@ -61,6 +65,7 @@ Attribute VB_Exposed = False
 '
 '     - predictable login UX
 '     - clearer error handling
+'     - inline login status messaging inside the form
 '     - runtime credential injection for passthrough SQL
 '     - optional DSN override behavior for per-machine custom configuration
 '
@@ -111,6 +116,14 @@ Attribute VB_Exposed = False
 '
 ' password helpers:
 '     OpenPasswordChangeDialog
+'
+' login status helpers:
+'     ClearLoginStatus
+'     SetLoginHeaderText
+'     ShowLoginStatus
+'     ShowLoginFailure
+'     GetLoginFailureSummary
+'     ShortLoginErrorDetails
 '
 '
 ' Configuration constants
@@ -163,6 +176,7 @@ Attribute VB_Exposed = False
 '
 '     - present credential prompts
 '     - display login failures
+'     - classify common Oracle / ODBC login problems into user-friendly messages
 '     - explain help options to users
 '
 '
