@@ -19,7 +19,8 @@
 ' This module is responsible for:
 '
 '     - reading and updating tblConn configuration values
-'     - building DSN-based ODBC connection strings
+'     - building DSN-based Oracle ODBC connection strings
+'     - exposing a fully parameterized Oracle ODBC connection-string builder
 '     - preferring the runtime Oracle session connection string when available
 '     - executing passthrough scalar queries
 '     - executing passthrough action SQL
@@ -47,6 +48,7 @@
 '     RequireOracleSession
 '
 ' connection helpers:
+'     Build_Oracle_ODBC_Conn_Str
 '     Get_ODBC_Conn_Str
 '     Get_ADO_Login_Conn_Str
 '     Test_ODBC_Conn
@@ -95,6 +97,15 @@
 ' Action SQL:
 '
 '     PTQ_Execute Get_DB_DSN(), "UPDATE my_table SET col = 'X' WHERE id = 1"
+'
+' Full connection-string build:
+'
+'     sConn = Build_Oracle_ODBC_Conn_Str( _
+'         sDSN:="MY_DATA_SOURCE", _
+'         sUserName:="scott", _
+'         sPassword:="tiger", _
+'         lFBS:=128000, _
+'         lTSZ:=16384)
 '
 ' Single-row retrieval:
 '
@@ -163,6 +174,8 @@
 ' Row materialization is intentionally generic so callers can use aliased SELECT
 ' lists without depending on exact Oracle column-name casing.
 '
+' Get_ODBC_Conn_Str remains the compatibility wrapper that uses the builder defaults.
+'
 '
 ' Version
 ' -------
@@ -175,11 +188,13 @@ Option Explicit
 
 Private Const cModuleName As String = "modOracleDataAccess"
 
-' Connection string base with [DSN] and [LOGIN] tokens
-Public Const ORACLE_CONNECTION_STRING_BASE As String = _
-    "ODBC;DSN=[DSN];[LOGIN]DBQ=[DSN];DBA=W;APA=T;EXC=F;FEN=T;QTO=T;FRC=10;FDL=10;LOB=T;" & _
-    "RST=T;BTD=F;BNF=F;BAM=IfAllSuccessful;NUM=NLS;DPM=F;MTS=T;MDI=F;CSR=F;FWC=F;FBS=64000;" & _
-    "TLO=O;MLD=0;ODA=F;STE=F;TSZ=8192;AST=FLOAT;LPS=8192;;"
+Private Function OracleBoolSetting(ByVal bValue As Boolean) As String
+    If bValue Then
+        OracleBoolSetting = "T"
+    Else
+        OracleBoolSetting = "F"
+    End If
+End Function
 
 '------------------------------------------------------------------------------------
 ' tblConn getters / setters
@@ -305,38 +320,99 @@ End Sub
 ' Connection string helpers
 '------------------------------------------------------------------------------------
 
+Public Function Build_Oracle_ODBC_Conn_Str( _
+    Optional ByVal sDSN As String = "", _
+    Optional ByVal sUserName As String = "", _
+    Optional ByVal sPassword As String = "", _
+    Optional ByVal sDBA As String = "W", _
+    Optional ByVal bAPA As Boolean = True, _
+    Optional ByVal bEXC As Boolean = False, _
+    Optional ByVal bFEN As Boolean = True, _
+    Optional ByVal bQTO As Boolean = True, _
+    Optional ByVal lFRC As Long = 10, _
+    Optional ByVal lFDL As Long = 10, _
+    Optional ByVal bLOB As Boolean = True, _
+    Optional ByVal bRST As Boolean = True, _
+    Optional ByVal bBTD As Boolean = False, _
+    Optional ByVal bBNF As Boolean = False, _
+    Optional ByVal sBAM As String = "IfAllSuccessful", _
+    Optional ByVal sNUM As String = "NLS", _
+    Optional ByVal bDPM As Boolean = False, _
+    Optional ByVal bMTS As Boolean = True, _
+    Optional ByVal bMDI As Boolean = False, _
+    Optional ByVal bCSR As Boolean = False, _
+    Optional ByVal bFWC As Boolean = False, _
+    Optional ByVal lFBS As Long = 64000, _
+    Optional ByVal sTLO As String = "O", _
+    Optional ByVal lMLD As Long = 0, _
+    Optional ByVal bODA As Boolean = False, _
+    Optional ByVal bSTE As Boolean = False, _
+    Optional ByVal lTSZ As Long = 8192, _
+    Optional ByVal sAST As String = "FLOAT", _
+    Optional ByVal lLPS As Long = 8192 _
+) As String
+
+    Dim sConn As String
+
+    If Len(sDSN) = 0 Then sDSN = Get_DB_DSN()
+
+    If Len(sDSN) = 0 Then
+        Err.Raise vbObjectError + 1010, cModuleName & ".Build_Oracle_ODBC_Conn_Str", _
+                  "No DSN was supplied and tblConn.DSN is blank."
+    End If
+
+    If (Len(sUserName) = 0 Xor Len(sPassword) = 0) Then
+        Err.Raise vbObjectError + 1011, cModuleName & ".Build_Oracle_ODBC_Conn_Str", _
+                  "User name and password must both be supplied or both omitted."
+    End If
+
+    sConn = "ODBC;"
+    sConn = sConn & "DSN=" & sDSN & ";"
+
+    If Len(sUserName) > 0 Then
+        sConn = sConn & "Uid=" & sUserName & ";Pwd=" & sPassword & ";"
+    End If
+
+    sConn = sConn & _
+        "DBQ=" & sDSN & ";" & _
+        "DBA=" & sDBA & ";" & _
+        "APA=" & OracleBoolSetting(bAPA) & ";" & _
+        "EXC=" & OracleBoolSetting(bEXC) & ";" & _
+        "FEN=" & OracleBoolSetting(bFEN) & ";" & _
+        "QTO=" & OracleBoolSetting(bQTO) & ";" & _
+        "FRC=" & CStr(lFRC) & ";" & _
+        "FDL=" & CStr(lFDL) & ";" & _
+        "LOB=" & OracleBoolSetting(bLOB) & ";" & _
+        "RST=" & OracleBoolSetting(bRST) & ";" & _
+        "BTD=" & OracleBoolSetting(bBTD) & ";" & _
+        "BNF=" & OracleBoolSetting(bBNF) & ";" & _
+        "BAM=" & sBAM & ";" & _
+        "NUM=" & sNUM & ";" & _
+        "DPM=" & OracleBoolSetting(bDPM) & ";" & _
+        "MTS=" & OracleBoolSetting(bMTS) & ";" & _
+        "MDI=" & OracleBoolSetting(bMDI) & ";" & _
+        "CSR=" & OracleBoolSetting(bCSR) & ";" & _
+        "FWC=" & OracleBoolSetting(bFWC) & ";" & _
+        "FBS=" & CStr(lFBS) & ";" & _
+        "TLO=" & sTLO & ";" & _
+        "MLD=" & CStr(lMLD) & ";" & _
+        "ODA=" & OracleBoolSetting(bODA) & ";" & _
+        "STE=" & OracleBoolSetting(bSTE) & ";" & _
+        "TSZ=" & CStr(lTSZ) & ";" & _
+        "AST=" & sAST & ";" & _
+        "LPS=" & CStr(lLPS) & ";"
+
+    Build_Oracle_ODBC_Conn_Str = sConn
+
+End Function
+
 Public Function Get_ODBC_Conn_Str( _
     Optional ByVal sDSN As String = "", _
     Optional ByVal sUserName As String = "", _
     Optional ByVal sPassword As String = "" _
 ) As String
 
-    Dim sConn As String
-    Dim sLogin As String
-
-    If Len(sDSN) = 0 Then sDSN = Get_DB_DSN()
-
-    If Len(sDSN) = 0 Then
-        Err.Raise vbObjectError + 1010, cModuleName & ".Get_ODBC_Conn_Str", _
-                  "No DSN was supplied and tblConn.DSN is blank."
-    End If
-
-    If (Len(sUserName) = 0 Xor Len(sPassword) = 0) Then
-        Err.Raise vbObjectError + 1011, cModuleName & ".Get_ODBC_Conn_Str", _
-                  "User name and password must both be supplied or both omitted."
-    End If
-
-    sConn = Replace(ORACLE_CONNECTION_STRING_BASE, "[DSN]", sDSN)
-
-    If Len(sUserName) = 0 Then
-        sLogin = vbNullString
-    Else
-        sLogin = "Uid=" & sUserName & ";Pwd=" & sPassword & ";"
-    End If
-
-    sConn = Replace(sConn, "[LOGIN]", sLogin)
-
-    Get_ODBC_Conn_Str = sConn
+    Get_ODBC_Conn_Str = Build_Oracle_ODBC_Conn_Str(sDSN, sUserName, sPassword)
 
 End Function
 
