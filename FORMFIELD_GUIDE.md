@@ -1017,6 +1017,52 @@ What it does not do:
 
 Treat the generated output as a starting point, not final code.
 
+### Print a starter form-module scaffold from Oracle metadata
+
+If you want more than just `ConfigureFields`, you can print a fuller form-module
+starter:
+
+```vb
+Ofm_Debug_PrintFormModuleScaffold "APP_RECORD"
+```
+
+You can also pass overrides:
+
+```vb
+Ofm_Debug_PrintFormModuleScaffold _
+    tableName:="APP_RECORD", _
+    formName:="frmAppRecord", _
+    schemaName:="YOUR_SCHEMA", _
+    keyFieldName:="RECORD_ID", _
+    sequenceName:="APP_RECORD_SEQ"
+```
+
+What it prints:
+
+- module-level constants like `cTableName`, `cKeyField`, and optional `cSequenceName`
+- module-level variables like `mFields`, `mOriginalValues`, and `mIsNewRecord`
+- starter `Form_Open`
+- starter `Form_Load`
+- generated `ConfigureFields`
+- starter `btnSave_Click`
+- starter `btnDelete_Click`
+- a suggested control-name list based on column names
+
+How it guesses control names:
+
+- key fields keep the Oracle field name as the control name
+- likely `Y/N` style flags become `chk...`
+- everything else becomes `txt...`
+
+That is intentionally conservative. It gives you a usable starting point, but you
+should still review:
+
+- combo-box fields
+- joined read-model fields
+- lookup text controls
+- composite keys
+- whether a sequence is actually used for inserts
+
 ### Inspect one field definition
 
 ```vb
