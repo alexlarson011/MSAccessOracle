@@ -326,9 +326,9 @@ Private Sub btnLogin_Click()
     End If
 
     If Not OracleAdmin_Get_ODBC_DSN_Exists(Get_DB_DSN()) Then
-        ShowLoginStatus _
-            "The Oracle ODBC DSN '" & Get_DB_DSN() & "' is not set up on this machine.", _
-            "Create the DSN in the Windows ODBC Data Source Administrator, or switch the application to a valid DSN."
+        ClearLoginStatus
+        MsgBox "The Oracle ODBC DSN '" & Get_DB_DSN() & "' is not set up on this machine." & vbCrLf & vbCrLf & _
+               "Create the DSN in the Windows ODBC Data Source Administrator, or switch the application to a valid DSN.", vbCritical
         Me.txtUser.SetFocus
         Exit Sub
     End If
@@ -347,11 +347,14 @@ Private Sub btnLogin_Click()
         If InStr(1, sLoginErrorText, "ORA-28001", vbTextCompare) > 0 Then
             Err.Clear
             On Error GoTo ErrHandler
-            ShowLoginStatus _
-                "Your Oracle password is expired. The Oracle driver password-change prompt will open if the driver supports it.", _
-                ShortLoginErrorDetails(sLoginErrorText)
+            ClearLoginStatus
+            MsgBox "Your Oracle password is expired." & vbCrLf & vbCrLf & _
+                   "The Oracle driver password-change prompt will open if the driver supports it." & vbCrLf & vbCrLf & _
+                   ShortLoginErrorDetails(sLoginErrorText), vbExclamation
             If PromptExpiredPasswordChangeViaDriver(Trim$(Nz(Me.txtUser, vbNullString))) Then
-                ShowLoginStatus "The Oracle driver password-change prompt completed. Enter your new password and click Login again."
+                MsgBox "Control returned from the Oracle driver password-change attempt." & vbCrLf & vbCrLf & _
+                       "If the driver showed a password-change dialog and you completed it, enter your new password and click Login again." & vbCrLf & vbCrLf & _
+                       "If no password-change dialog appeared, the Oracle ODBC driver did not expose that workflow here.", vbInformation
             End If
             Me.txtPass = Null
             Me.txtPass.SetFocus
@@ -579,9 +582,9 @@ Cleanup:
     Exit Function
 
 ErrHandler:
-    ShowLoginStatus _
-        "The Oracle driver password-change prompt did not complete.", _
-        ShortLoginErrorDetails(Err.Description)
+    ClearLoginStatus
+    MsgBox "The Oracle driver password-change prompt did not complete." & vbCrLf & vbCrLf & _
+           ShortLoginErrorDetails(Err.Description), vbExclamation
     Resume Cleanup
 
 End Function
@@ -685,7 +688,9 @@ Private Sub ShowLoginStatus(ByVal sSummary As String, Optional ByVal sDetails As
 End Sub
 
 Private Sub ShowLoginFailure(ByVal sErrorText As String)
-    ShowLoginStatus GetLoginFailureSummary(sErrorText), ShortLoginErrorDetails(sErrorText)
+    ClearLoginStatus
+    MsgBox GetLoginFailureSummary(sErrorText) & vbCrLf & vbCrLf & _
+           ShortLoginErrorDetails(sErrorText), vbCritical
 End Sub
 
 Private Function GetLoginFailureSummary(ByVal sErrorText As String) As String
