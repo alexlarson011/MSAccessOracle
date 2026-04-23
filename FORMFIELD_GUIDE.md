@@ -112,6 +112,8 @@ Private Sub Form_Load()
         Ofm_LoadForm Me, Get_DB_Schema(), cTableName, cKeyField, CLng(recordId), mFields, mOriginalValues
     End If
 
+    Ofm_LoadLookupControls Me, mFields
+
 End Sub
 
 Private Sub btnSave_Click()
@@ -404,6 +406,8 @@ The current engine cares most about:
 
 - `"TEXT"`
 - `"CHECKBOX"`
+- `"COMBOBOX"`
+- `"LISTBOX"`
 - `"OPTIONGROUP"`
 
 In practice, checkbox behavior is the one with special translation logic.
@@ -444,6 +448,97 @@ Example for `Y` / `Null`:
 ```vb
 f.CheckedValue = "Y"
 f.UncheckedValue = Null
+```
+
+
+### 6.15 Lookup properties for combo boxes and list boxes
+
+The field class now supports optional lookup metadata for controls that should load
+their choices from Oracle.
+
+Relevant properties:
+
+- `LookupSql`
+- `LookupBoundColumn`
+- `LookupDisplayColumn`
+- `LookupColumnWidths`
+- `LookupIncludeBlankRow`
+- `LookupBlankCaption`
+
+These are intended for:
+
+- combo boxes
+- list boxes
+
+Example:
+
+```vb
+Set f = Ofm_AddField(mFields, "STATUS_CD", "cboStatus")
+f.ControlKind = "COMBOBOX"
+f.LookupSql = _
+    "SELECT STATUS_CD, STATUS_TEXT " & _
+    "FROM APP_STATUS_LU " & _
+    "ORDER BY STATUS_TEXT"
+f.LookupBoundColumn = 1
+f.LookupDisplayColumn = 2
+f.LookupIncludeBlankRow = True
+f.LookupBlankCaption = ""
+f.LookupColumnWidths = "0;1.5"""
+```
+
+That tells the engine:
+
+- populate `cboStatus` from Oracle SQL
+- use the first returned column as the stored value
+- treat the second returned column as the intended display column
+- include a blank choice at the top
+- hide the bound code column by setting the first width to `0`
+
+The engine loads these controls using Access `Value List` row sources rather than
+saved Access queries. That keeps the lookup behavior consistent with the repo’s
+stateless Oracle pattern.
+
+Access ultimately decides which columns are visible from `ColumnWidths`, so
+`LookupDisplayColumn` is most useful when paired with `LookupColumnWidths`.
+
+
+## 6A. Lookup helper routines
+
+The form engine now includes three helper routines for combo/list population:
+
+- `Ofm_LoadListControlBySql`
+- `Ofm_LoadLookupControl`
+- `Ofm_LoadLookupControls`
+
+Use `Ofm_LoadLookupControls` when your field definitions already carry the lookup
+metadata:
+
+```vb
+Ofm_LoadLookupControls Me, mFields
+```
+
+Use `Ofm_LoadLookupControl` when you want to load one field definition only:
+
+```vb
+Dim f As clsOracleFormField
+
+Set f = Ofm_GetFieldByControlName(mFields, "cboStatus")
+Ofm_LoadLookupControl Me, f
+```
+
+Use `Ofm_LoadListControlBySql` when you want an ad hoc list load without storing the
+lookup SQL on the class:
+
+```vb
+Ofm_LoadListControlBySql _
+    Me, _
+    "cboStatus", _
+    "SELECT STATUS_CD, STATUS_TEXT FROM APP_STATUS_LU ORDER BY STATUS_TEXT", _
+    1, _
+    2, _
+    True, _
+    "", _
+    "0;1.5"""
 ```
 
 

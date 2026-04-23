@@ -46,3 +46,5 @@ For stateless / passthrough-only use, the first example is usually all you need.
 ## Documentation
 
 - [Using `clsOracleFormField` and `modOracleFormEngine`](./FORMFIELD_GUIDE.md)
+- [Base form pattern](./BASE_FORM_PATTERN.md)
+- [Proposed form test plan](./FORM_TEST_PLAN.md)

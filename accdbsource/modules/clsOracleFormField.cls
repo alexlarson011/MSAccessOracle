@@ -51,6 +51,7 @@ Option Explicit
 '     - default value behavior
 '     - control type
 '     - checkbox mapping values
+'     - optional combo/list lookup SQL metadata
 '
 '
 ' Key properties
@@ -82,6 +83,12 @@ Option Explicit
 '     CheckedValue
 '     UncheckedValue
 '     UseCustomBooleanMapping
+'     LookupSql
+'     LookupBoundColumn
+'     LookupDisplayColumn
+'     LookupColumnWidths
+'     LookupIncludeBlankRow
+'     LookupBlankCaption
 '
 '
 ' Helper methods
@@ -93,12 +100,17 @@ Option Explicit
 '
 ' control type checks:
 '     IsCheckbox
+'     IsComboBox
+'     IsListBox
 '     IsOptionGroup
 '     IsTextControl
 '
 ' normalization:
 '     GetNormalizedValue
 '     IsMissingRequiredValue
+
+' lookup helpers:
+'     HasLookupSql
 '
 ' debugging:
 '     DebugSummary
@@ -121,6 +133,15 @@ Option Explicit
 '     f.UseCustomBooleanMapping = True
 '     f.CheckedValue = "Y"
 '     f.UncheckedValue = "N"
+'
+' Combo-box lookup example:
+'
+'     Set f = Ofm_AddField(mFields, "STATUS_CD", "cboStatus")
+'     f.ControlKind = "COMBOBOX"
+'     f.LookupSql = "SELECT STATUS_CD, STATUS_TEXT FROM APP_STATUS_LU ORDER BY STATUS_TEXT"
+'     f.LookupBoundColumn = 1
+'     f.LookupDisplayColumn = 2
+'     f.LookupIncludeBlankRow = True
 '
 ' Key field example:
 '
@@ -197,6 +218,13 @@ Private pCheckedValue As Variant
 Private pUncheckedValue As Variant
 Private pUseCustomBooleanMapping As Boolean
 
+Private pLookupSql As String
+Private pLookupBoundColumn As Long
+Private pLookupDisplayColumn As Long
+Private pLookupColumnWidths As String
+Private pLookupIncludeBlankRow As Boolean
+Private pLookupBlankCaption As String
+
 '------------------------------------------------------------------------------------
 ' Initialization
 '------------------------------------------------------------------------------------
@@ -225,6 +253,13 @@ Private Sub Class_Initialize()
     pCheckedValue = 1
     pUncheckedValue = 0
     pUseCustomBooleanMapping = False
+
+    pLookupSql = vbNullString
+    pLookupBoundColumn = 1
+    pLookupDisplayColumn = 2
+    pLookupColumnWidths = vbNullString
+    pLookupIncludeBlankRow = False
+    pLookupBlankCaption = vbNullString
 
 End Sub
 
@@ -422,6 +457,67 @@ Public Property Let UseCustomBooleanMapping(ByVal Value As Boolean)
     pUseCustomBooleanMapping = Value
 End Property
 
+Public Property Get LookupSql() As String
+    LookupSql = pLookupSql
+End Property
+
+Public Property Let LookupSql(ByVal Value As String)
+    pLookupSql = Trim$(Nz(Value, vbNullString))
+End Property
+
+
+Public Property Get LookupBoundColumn() As Long
+    LookupBoundColumn = pLookupBoundColumn
+End Property
+
+Public Property Let LookupBoundColumn(ByVal Value As Long)
+    If Value <= 0 Then
+        pLookupBoundColumn = 1
+    Else
+        pLookupBoundColumn = Value
+    End If
+End Property
+
+
+Public Property Get LookupDisplayColumn() As Long
+    LookupDisplayColumn = pLookupDisplayColumn
+End Property
+
+Public Property Let LookupDisplayColumn(ByVal Value As Long)
+    If Value <= 0 Then
+        pLookupDisplayColumn = 2
+    Else
+        pLookupDisplayColumn = Value
+    End If
+End Property
+
+
+Public Property Get LookupColumnWidths() As String
+    LookupColumnWidths = pLookupColumnWidths
+End Property
+
+Public Property Let LookupColumnWidths(ByVal Value As String)
+    pLookupColumnWidths = Trim$(Nz(Value, vbNullString))
+End Property
+
+
+Public Property Get LookupIncludeBlankRow() As Boolean
+    LookupIncludeBlankRow = pLookupIncludeBlankRow
+End Property
+
+Public Property Let LookupIncludeBlankRow(ByVal Value As Boolean)
+    pLookupIncludeBlankRow = Value
+End Property
+
+
+Public Property Get LookupBlankCaption() As String
+    LookupBlankCaption = pLookupBlankCaption
+End Property
+
+Public Property Let LookupBlankCaption(ByVal Value As String)
+    pLookupBlankCaption = Nz(Value, vbNullString)
+End Property
+
 '------------------------------------------------------------------------------------
 ' Simple validation helpers
 '------------------------------------------------------------------------------------
@@ -457,6 +553,14 @@ End Function
 
 Public Function IsCheckbox() As Boolean
     IsCheckbox = (UCase$(pControlKind) = "CHECKBOX")
+End Function
+
+Public Function IsComboBox() As Boolean
+    IsComboBox = (UCase$(pControlKind) = "COMBOBOX")
+End Function
+
+Public Function IsListBox() As Boolean
+    IsListBox = (UCase$(pControlKind) = "LISTBOX")
 End Function
 
 
@@ -534,6 +638,10 @@ Public Function IsMissingRequiredValue(ByVal InputValue As Variant) As Boolean
 
 End Function
 
+Public Function HasLookupSql() As Boolean
+    HasLookupSql = (Len(pLookupSql) > 0)
+End Function
+
 '------------------------------------------------------------------------------------
 ' Debug helpers
 '------------------------------------------------------------------------------------
@@ -554,6 +662,7 @@ Public Function DebugSummary() As String
         "; NullIfBlank=" & CStr(pNullIfBlank) & _
         "; ControlKind=" & pControlKind & _
         "; UseCustomBooleanMapping=" & CStr(pUseCustomBooleanMapping) & _
+        "; HasLookupSql=" & CStr(Len(pLookupSql) > 0) & _
         "; OracleDataType=" & pOracleDataType
 
 End Function

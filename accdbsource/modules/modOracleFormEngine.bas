@@ -54,6 +54,11 @@
 '     Ofm_GetControlValue
 '     Ofm_SetControlValue
 '
+' list / combo helpers:
+'     Ofm_LoadListControlBySql
+'     Ofm_LoadLookupControl
+'     Ofm_LoadLookupControls
+'
 ' snapshot / dirty helpers:
 '     Ofm_SnapshotValues
 '     Ofm_IsDirty
@@ -105,6 +110,15 @@
 '     Set f = Ofm_AddField(mFields, "STATUS_CD", "txtStatusText", False, False, False)
 '     f.LoadFieldName = "STATUS_TEXT"
 '
+' Combo-box lookup example:
+'
+'     Set f = Ofm_AddField(mFields, "STATUS_CD", "cboStatus")
+'     f.ControlKind = "COMBOBOX"
+'     f.LookupSql = "SELECT STATUS_CD, STATUS_TEXT FROM APP_STATUS_LU ORDER BY STATUS_TEXT"
+'     f.LookupBoundColumn = 1
+'     f.LookupDisplayColumn = 2
+'     f.LookupIncludeBlankRow = True
+'
 ' Load an existing record:
 '
 '     Ofm_LoadForm Me, Get_DB_Schema(), cTableName, cKeyField, keyValue, mFields, mOriginalValues
@@ -121,6 +135,10 @@
 ' Initialize a new record:
 '
 '     Ofm_InitNewForm Me, mFields, mOriginalValues
+'
+' Load configured combo/list lookups:
+'
+'     Ofm_LoadLookupControls Me, mFields
 '
 ' Save:
 '
@@ -1010,6 +1028,178 @@ Public Sub Ofm_SetControlValue( _
 )
 
     frm.Controls(fieldDef.ControlName).Value = Ofm_DbToControlValue(fieldDef, dbValue)
+
+End Sub
+
+'------------------------------------------------------------------------------------
+' List / combo helpers
+'------------------------------------------------------------------------------------
+
+Private Function Ofm_ValueListCell(ByVal v As Variant) As String
+
+    Dim s As String
+
+    If IsNull(v) Then Exit Function
+
+    s = CStr(v)
+    s = Replace$(s, ";", ",")
+    s = Replace$(s, vbCr, " ")
+    s = Replace$(s, vbLf, " ")
+
+    Ofm_ValueListCell = s
+
+End Function
+
+Private Function Ofm_BuildBlankValueListRow( _
+    ByVal columnCount As Long, _
+    Optional ByVal displayColumn As Long = 2, _
+    Optional ByVal blankCaption As String = "" _
+) As String
+
+    Dim i As Long
+    Dim s As String
+
+    If columnCount <= 0 Then columnCount = 1
+    If displayColumn <= 0 Then displayColumn = 1
+
+    For i = 1 To columnCount
+        If i > 1 Then s = s & ";"
+
+        If i = displayColumn Then
+            s = s & Ofm_ValueListCell(blankCaption)
+        End If
+    Next i
+
+    Ofm_BuildBlankValueListRow = s
+
+End Function
+
+Private Function Ofm_BuildValueListRow(ByVal rowData As Object) As String
+
+    Dim keys As Variant
+    Dim i As Long
+    Dim s As String
+
+    keys = rowData.Keys
+
+    For i = LBound(keys) To UBound(keys)
+        If i > LBound(keys) Then s = s & ";"
+        s = s & Ofm_ValueListCell(rowData(keys(i)))
+    Next i
+
+    Ofm_BuildValueListRow = s
+
+End Function
+
+Private Sub Ofm_PrepareListControl( _
+    ByVal ctl As Object, _
+    ByVal columnCount As Long, _
+    ByVal boundColumn As Long, _
+    Optional ByVal columnWidths As String = "" _
+)
+
+    If columnCount <= 0 Then columnCount = 1
+    If boundColumn <= 0 Then boundColumn = 1
+
+    ctl.RowSourceType = "Value List"
+    ctl.RowSource = vbNullString
+    ctl.ColumnCount = columnCount
+    ctl.BoundColumn = boundColumn
+
+    If Len(columnWidths) > 0 Then
+        ctl.ColumnWidths = columnWidths
+    End If
+
+End Sub
+
+Public Sub Ofm_LoadListControlBySql( _
+    ByRef frm As Access.Form, _
+    ByVal controlName As String, _
+    ByVal sSQL As String, _
+    Optional ByVal boundColumn As Long = 1, _
+    Optional ByVal displayColumn As Long = 2, _
+    Optional ByVal includeBlankRow As Boolean = False, _
+    Optional ByVal blankCaption As String = "", _
+    Optional ByVal columnWidths As String = "", _
+    Optional ByVal dsn As String = "" _
+)
+
+    Dim rows As Collection
+    Dim rowData As Object
+    Dim ctl As Object
+    Dim columnCount As Long
+
+    If Len(Trim$(controlName)) = 0 Then
+        Err.Raise vbObjectError + 5070, cModuleName & ".Ofm_LoadListControlBySql", "Control name cannot be blank."
+    End If
+
+    If Len(Trim$(sSQL)) = 0 Then
+        Err.Raise vbObjectError + 5071, cModuleName & ".Ofm_LoadListControlBySql", "Lookup SQL cannot be blank."
+    End If
+
+    Set rows = PTQ_GetRows(sSQL, dsn)
+    Set ctl = frm.Controls(controlName)
+
+    If rows.Count > 0 Then
+        columnCount = rows(1).Count
+    Else
+        columnCount = IIf(displayColumn > boundColumn, displayColumn, boundColumn)
+    End If
+
+    Call Ofm_PrepareListControl(ctl, columnCount, boundColumn, columnWidths)
+
+    If includeBlankRow Then
+        ctl.AddItem Ofm_BuildBlankValueListRow(columnCount, displayColumn, blankCaption)
+    End If
+
+    For Each rowData In rows
+        ctl.AddItem Ofm_BuildValueListRow(rowData)
+    Next rowData
+
+End Sub
+
+Public Sub Ofm_LoadLookupControl( _
+    ByRef frm As Access.Form, _
+    ByRef fieldDef As clsOracleFormField, _
+    Optional ByVal dsn As String = "" _
+)
+
+    If Not fieldDef.HasLookupSql Then
+        Err.Raise vbObjectError + 5072, cModuleName & ".Ofm_LoadLookupControl", _
+                  "Field " & fieldDef.ControlName & " does not define LookupSql."
+    End If
+
+    If Not (fieldDef.IsComboBox Or fieldDef.IsListBox) Then
+        Err.Raise vbObjectError + 5073, cModuleName & ".Ofm_LoadLookupControl", _
+                  "Field " & fieldDef.ControlName & " is not marked as COMBOBOX or LISTBOX."
+    End If
+
+    Ofm_LoadListControlBySql _
+        frm:=frm, _
+        controlName:=fieldDef.ControlName, _
+        sSQL:=fieldDef.LookupSql, _
+        boundColumn:=fieldDef.LookupBoundColumn, _
+        displayColumn:=fieldDef.LookupDisplayColumn, _
+        includeBlankRow:=fieldDef.LookupIncludeBlankRow, _
+        blankCaption:=fieldDef.LookupBlankCaption, _
+        columnWidths:=fieldDef.LookupColumnWidths, _
+        dsn:=dsn
+
+End Sub
+
+Public Sub Ofm_LoadLookupControls( _
+    ByRef frm As Access.Form, _
+    ByRef fields As Collection, _
+    Optional ByVal dsn As String = "" _
+)
+
+    Dim f As clsOracleFormField
+
+    For Each f In fields
+        If f.HasLookupSql Then
+            Ofm_LoadLookupControl frm, f, dsn
+        End If
+    Next f
 
 End Sub
 
