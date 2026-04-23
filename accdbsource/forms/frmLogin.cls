@@ -198,6 +198,11 @@ Private Const HELP_EMAIL_ADDR As String = "[HELPEMAIL@HELP.DOMAIN]"
 Private Const PROMPT_SENDEMAIL As Boolean = True
 '----------------------------------
 
+Private Const cHeaderTextColor As Long = 4210752
+Private Const cHeaderErrorColor As Long = 192
+
+Private mDefaultHeaderText As String
+
 Private Sub Form_Open(Cancel As Integer)
 
     Dim appNameText As String
@@ -240,7 +245,8 @@ Private Sub Form_Open(Cancel As Integer)
     Me.txtAppName.ControlSource = "=""" & appNameText & """"
 
     textValue = "Enter your " & Get_DB_DSN() & " credentials to sign in:"
-    Me.txtHeader.ControlSource = "=""" & textValue & """"
+    mDefaultHeaderText = textValue
+    SetLoginHeaderText mDefaultHeaderText
 
     If Len(Nz(versionValue, vbNullString)) > 0 Then
         textValue = "Version: " & versionValue
@@ -286,18 +292,29 @@ Private Sub btnLogin_Click()
     Dim oraclePassExpired As Boolean
     Dim validatedOracleUser As String
     Dim ptqValidatedUser As String
+    Dim sLoginErrorText As String
 
     On Error GoTo ErrHandler
 
+    ClearLoginStatus
+
     If Len(Trim$(Nz(Me.txtUser, vbNullString))) = 0 Then
-        MsgBox "Enter a username to continue.", vbExclamation
+        ShowLoginStatus "Enter a username to continue."
         Me.txtUser.SetFocus
         Exit Sub
     End If
 
     If Len(Trim$(Nz(Me.txtPass, vbNullString))) = 0 Then
-        MsgBox "Enter a password to continue.", vbExclamation
+        ShowLoginStatus "Enter a password to continue."
         Me.txtPass.SetFocus
+        Exit Sub
+    End If
+
+    If Not OracleAdmin_Get_ODBC_DSN_Exists(Get_DB_DSN()) Then
+        ShowLoginStatus _
+            "The Oracle ODBC DSN '" & Get_DB_DSN() & "' is not set up on this machine.", _
+            "Create the DSN in the Windows ODBC Data Source Administrator, or switch the application to a valid DSN."
+        Me.txtUser.SetFocus
         Exit Sub
     End If
 
@@ -310,29 +327,26 @@ Private Sub btnLogin_Click()
     conn.Open adoLoginConnectionString
 
     If Err.Number <> 0 Then
+        sLoginErrorText = Err.Description
 
-        If InStr(1, Err.Description, "ORA-28001", vbTextCompare) > 0 Then
+        If InStr(1, sLoginErrorText, "ORA-28001", vbTextCompare) > 0 Then
             oraclePassExpired = True
             Err.Clear
             On Error GoTo ErrHandler
-            MsgBox "Your " & Get_DB_DSN() & " password is expired." & vbCrLf & vbCrLf & _
-                   "A custom password change form will open now. If the Oracle ODBC driver still requires its own password-change prompt, follow that prompt instead.", vbExclamation
+            ShowLoginStatus _
+                "Your Oracle password is expired. Use the password change workflow to continue.", _
+                ShortLoginErrorDetails(sLoginErrorText)
             OpenPasswordChangeDialog True
             Me.txtPass.SetFocus
             GoTo Cleanup
         Else
-            MsgBox "ODBC connection attempt to " & Get_DB_DSN() & " was unsuccessful." & vbCrLf & vbCrLf & _
-                   Err.Description, vbCritical
+            ShowLoginFailure sLoginErrorText
             Me.txtPass.SetFocus
             GoTo Cleanup
         End If
 
     End If
     On Error GoTo ErrHandler
-
-    If oraclePassExpired Then
-        MsgBox "Your " & Get_DB_DSN() & " password is expired. Please complete the Oracle password change dialog when prompted.", vbExclamation
-    End If
 
     Set rs = conn.Execute("SELECT USER FROM DUAL")
 
@@ -389,8 +403,7 @@ Cleanup:
 
 ErrHandler:
     Call OracleSession_Clear
-    MsgBox "ODBC Login Error" & vbCrLf & vbCrLf & _
-           "Error # " & Err.Number & " - " & Err.Description, vbCritical
+    ShowLoginFailure Err.Description
     Resume Cleanup
 
 End Sub
@@ -568,3 +581,99 @@ ErrHandler:
     MsgBox "Unable to update custom DSN." & vbCrLf & vbCrLf & Err.Description, vbCritical
 
 End Sub
+
+Private Sub ClearLoginStatus()
+    SetLoginHeaderText mDefaultHeaderText
+End Sub
+
+Private Sub SetLoginHeaderText(ByVal sText As String, Optional ByVal lForeColor As Long = cHeaderTextColor)
+
+    Me.txtHeader.ControlSource = vbNullString
+    Me.txtHeader.Value = sText
+    Me.txtHeader.ForeColor = lForeColor
+
+End Sub
+
+Private Sub ShowLoginStatus(ByVal sSummary As String, Optional ByVal sDetails As String = "")
+
+    Dim sText As String
+
+    sText = sSummary
+
+    If Len(Trim$(sDetails)) > 0 Then
+        sText = sText & vbCrLf & sDetails
+    End If
+
+    SetLoginHeaderText sText, cHeaderErrorColor
+
+End Sub
+
+Private Sub ShowLoginFailure(ByVal sErrorText As String)
+    ShowLoginStatus GetLoginFailureSummary(sErrorText), ShortLoginErrorDetails(sErrorText)
+End Sub
+
+Private Function GetLoginFailureSummary(ByVal sErrorText As String) As String
+
+    Dim sUpper As String
+
+    sUpper = UCase$(Nz(sErrorText, vbNullString))
+
+    If Len(sUpper) = 0 Then
+        GetLoginFailureSummary = "Oracle login failed."
+    ElseIf InStr(1, sUpper, "ORA-01017", vbTextCompare) > 0 Then
+        GetLoginFailureSummary = "The Oracle user name or password is incorrect."
+    ElseIf InStr(1, sUpper, "ORA-28000", vbTextCompare) > 0 Then
+        GetLoginFailureSummary = "The Oracle user account is locked."
+    ElseIf InStr(1, sUpper, "ORA-28001", vbTextCompare) > 0 Then
+        GetLoginFailureSummary = "The Oracle password is expired."
+    ElseIf InStr(1, sUpper, "IM002", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "DATA SOURCE NAME NOT FOUND", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "NO DEFAULT DRIVER SPECIFIED", vbTextCompare) > 0 Then
+        GetLoginFailureSummary = "The Oracle ODBC DSN '" & Get_DB_DSN() & "' is not set up on this machine."
+    ElseIf InStr(1, sUpper, "IM003", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "SPECIFIED DRIVER COULD NOT BE LOADED", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "DRIVER COULD NOT BE LOADED", vbTextCompare) > 0 Then
+        GetLoginFailureSummary = "The Oracle ODBC client driver is not installed or could not be loaded."
+    ElseIf InStr(1, sUpper, "ORA-12170", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "ORA-12541", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "ORA-12543", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "ORA-12545", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "ORA-12537", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "ORA-12547", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "ORA-12560", vbTextCompare) > 0 Then
+        GetLoginFailureSummary = "The Oracle database could not be reached. Check VPN/network connectivity and database availability."
+    ElseIf InStr(1, sUpper, "ORA-12154", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "ORA-12514", vbTextCompare) > 0 _
+        Or InStr(1, sUpper, "ORA-12505", vbTextCompare) > 0 Then
+        GetLoginFailureSummary = "The Oracle DSN or service configuration is not resolving correctly."
+    ElseIf InStr(1, sUpper, "PASSTHROUGH VALIDATION RETURNED ORACLE USER", vbTextCompare) > 0 Then
+        GetLoginFailureSummary = "Login succeeded, but runtime Oracle validation returned a different user than expected."
+    Else
+        GetLoginFailureSummary = "Oracle login failed."
+    End If
+
+End Function
+
+Private Function ShortLoginErrorDetails(ByVal sErrorText As String) As String
+
+    Dim sDetails As String
+
+    sDetails = Trim$(Nz(sErrorText, vbNullString))
+
+    If Len(sDetails) = 0 Then Exit Function
+
+    sDetails = Replace$(sDetails, vbCrLf, " ")
+    sDetails = Replace$(sDetails, vbCr, " ")
+    sDetails = Replace$(sDetails, vbLf, " ")
+
+    Do While InStr(1, sDetails, "  ", vbBinaryCompare) > 0
+        sDetails = Replace$(sDetails, "  ", " ")
+    Loop
+
+    If Len(sDetails) > 180 Then
+        sDetails = Left$(sDetails, 177) & "..."
+    End If
+
+    ShortLoginErrorDetails = "Details: " & sDetails
+
+End Function
