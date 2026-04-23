@@ -1,0 +1,6 @@
+﻿dbMemo "SQL" ="SELECT USER FROM DUAL"
+dbMemo "Connect" ="ODBC;DSN=WHSD"
+dbBoolean "ReturnsRecords" ="-1"
+dbInteger "ODBCTimeout" ="60"
+dbBoolean "LogMessages" ="0"
+dbByte "Orientation" ="0"

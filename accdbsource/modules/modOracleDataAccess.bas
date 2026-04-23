@@ -249,7 +249,7 @@ Private Function PTQ_SelectAdo(ByVal sDSN As String, ByVal sSQL As String) As Va
     If rs.EOF Then
         PTQ_SelectAdo = Null
     Else
-        PTQ_SelectAdo = rs.fields(0).Value
+        PTQ_SelectAdo = rs.Fields(0).Value
     End If
 
 Cleanup:
@@ -332,8 +332,8 @@ Private Function PTQ_GetRowsAdo( _
         Set rowDict = CreateObject("Scripting.Dictionary")
         rowDict.CompareMode = vbTextCompare
 
-        For lFieldIndex = 0 To rs.fields.Count - 1
-            rowDict.Add rs.fields(lFieldIndex).Name, rs.fields(lFieldIndex).Value
+        For lFieldIndex = 0 To rs.Fields.Count - 1
+            rowDict.Add rs.Fields(lFieldIndex).Name, rs.Fields(lFieldIndex).Value
         Next lFieldIndex
 
         rows.Add rowDict

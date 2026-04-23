@@ -6,10 +6,12 @@ Begin Form
     RecordSelectors = NotDefault
     MaxButton = NotDefault
     MinButton = NotDefault
+    ControlBox = NotDefault
     ShortcutMenu = NotDefault
     AutoCenter = NotDefault
     NavigationButtons = NotDefault
     AllowDeletions = NotDefault
+    CloseButton = NotDefault
     DividingLines = NotDefault
     AllowAdditions = NotDefault
     DefaultView =0
@@ -23,8 +25,8 @@ Begin Form
     ItemSuffix =19
     Left =-28140
     Top =3024
-    Right =-6768
-    Bottom =15984
+    Right =-22308
+    Bottom =6432
     RecSrcDt = Begin
         0x9d7a7cfb941fe640
     End

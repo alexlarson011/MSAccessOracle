@@ -355,7 +355,7 @@ Private Sub btnLogin_Click()
                   "Login succeeded, but Oracle did not return the authenticated user."
     End If
 
-    validatedOracleUser = UCase$(Nz(rs.fields(0).Value, vbNullString))
+    validatedOracleUser = UCase$(Nz(rs.Fields(0).Value, vbNullString))
 
     If Len(validatedOracleUser) = 0 Then
         Err.Raise vbObjectError + 7101, "frmLogin.btnLogin_Click", _
