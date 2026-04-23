@@ -137,9 +137,9 @@
 ' When a runtime session exists, query helpers prefer that credentialed connection
 ' string over a DSN-only connection.
 '
-' Runtime session execution uses direct ADO connections for scalar, action, and row-
-' materialization helpers so re-login flows do not accidentally reuse stale Oracle
-' user state inside the Access/DAO ODBC layer.
+' Runtime session execution uses direct ADO connections for scalar and action helpers
+' so re-login flows do not accidentally reuse stale Oracle user state inside the
+' Access/DAO ODBC layer.
 '
 '
 ' Important architecture note
@@ -149,11 +149,14 @@
 ' Pre-login / DSN-only connectivity helpers still use temporary DAO passthrough
 ' QueryDefs.
 '
-' Logged-in runtime query helpers open short-lived ADO connections directly from the
-' stored runtime connection string.
+' Logged-in runtime scalar/action helpers open short-lived ADO connections directly
+' from the stored runtime connection string.
 '
-' DAO passthrough work that still runs in DSN mode uses a fresh isolated workspace
-' per call to reduce stale ODBC-session reuse inside Access.
+' Row materialization helpers use fresh isolated DAO passthrough QueryDefs so combo /
+' list style result loading stays compatible with Oracle ODBC behavior in Access.
+'
+' DAO passthrough work uses a fresh isolated workspace per call to reduce stale
+' ODBC-session reuse inside Access.
 '
 '
 ' Dependencies
@@ -935,11 +938,6 @@ Public Function PTQ_GetRows( _
     On Error GoTo HandleErr
 
     sDSN = ResolveDefaultDSN(sDSN)
-
-    If OracleSession_IsConnected() Then
-        Set PTQ_GetRows = PTQ_GetRowsAdo(sDSN, sSQL)
-        Exit Function
-    End If
 
     Set rows = New Collection
     Set db = OpenIsolatedCurrentDb(ws)
