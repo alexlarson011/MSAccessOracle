@@ -204,6 +204,8 @@ Option Compare Database
 Option Explicit
 
 Private Const cModuleName As String = "modOracleDataAccess"
+Private Const cAdoConnectionTimeoutSeconds As Long = 15
+Private Const cAdoQueryTimeoutSeconds As Long = 60
 
 Private Function OracleBoolSetting(ByVal bValue As Boolean) As String
     If bValue Then
@@ -260,6 +262,41 @@ Private Function ResolveDefaultDSN(Optional ByVal sDSN As String = "") As String
 
 End Function
 
+Private Function CreateAdoConnection(ByVal sDSN As String) As Object
+
+    Dim conn As Object
+
+    Set conn = CreateObject("ADODB.Connection")
+    conn.ConnectionTimeout = cAdoConnectionTimeoutSeconds
+    conn.CommandTimeout = cAdoQueryTimeoutSeconds
+    conn.Open Get_Runtime_ADO_Conn_Str(sDSN)
+
+    Set CreateAdoConnection = conn
+
+End Function
+
+Private Function OpenAdoRecordset( _
+    ByVal conn As Object, _
+    ByVal sSQL As String, _
+    Optional ByVal timeoutSeconds As Long = cAdoQueryTimeoutSeconds _
+) As Object
+
+    Dim cmd As Object
+    Dim rs As Object
+
+    Set cmd = CreateObject("ADODB.Command")
+    Set cmd.ActiveConnection = conn
+    cmd.CommandType = 1
+    cmd.CommandText = sSQL
+    cmd.CommandTimeout = timeoutSeconds
+
+    Set rs = CreateObject("ADODB.Recordset")
+    rs.Open cmd, , 0, 1
+
+    Set OpenAdoRecordset = rs
+
+End Function
+
 Private Function PTQ_SelectAdo(ByVal sDSN As String, ByVal sSQL As String) As Variant
 
     Dim conn As Object
@@ -267,9 +304,8 @@ Private Function PTQ_SelectAdo(ByVal sDSN As String, ByVal sSQL As String) As Va
 
     On Error GoTo HandleErr
 
-    Set conn = CreateObject("ADODB.Connection")
-    conn.Open Get_Runtime_ADO_Conn_Str(sDSN)
-    Set rs = conn.Execute(sSQL)
+    Set conn = CreateAdoConnection(sDSN)
+    Set rs = OpenAdoRecordset(conn, sSQL)
 
     If rs.EOF Then
         PTQ_SelectAdo = Null
@@ -311,9 +347,8 @@ Private Sub PTQ_ExecuteAdo( _
 
     On Error GoTo HandleErr
 
-    Set conn = CreateObject("ADODB.Connection")
+    Set conn = CreateAdoConnection(sDSN)
     conn.CommandTimeout = timeoutSeconds
-    conn.Open Get_Runtime_ADO_Conn_Str(sDSN)
     conn.Execute sSQL
 
 Cleanup:
@@ -351,9 +386,8 @@ Private Function PTQ_GetRowsAdo( _
     On Error GoTo HandleErr
 
     Set rows = New Collection
-    Set conn = CreateObject("ADODB.Connection")
-    conn.Open Get_Runtime_ADO_Conn_Str(sDSN)
-    Set rs = conn.Execute(sSQL)
+    Set conn = CreateAdoConnection(sDSN)
+    Set rs = OpenAdoRecordset(conn, sSQL)
 
     If Not rs.EOF Then
         vData = rs.GetRows
