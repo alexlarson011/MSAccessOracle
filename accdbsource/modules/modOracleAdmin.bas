@@ -502,9 +502,11 @@ Public Sub OracleAdmin_SwitchEnvironment( _
                   "DSN does not exist on this machine: " & dsnName
     End If
 
-    If Not Test_ODBC_Conn(dsnName) Then
-        Err.Raise vbObjectError + 2103, cModuleName & ".OracleAdmin_SwitchEnvironment", _
-                  "Unable to connect to DSN: " & dsnName
+    If updatePassthroughQueries Or updateLinkedTables Then
+        If Not Test_ODBC_Conn(dsnName) Then
+            Err.Raise vbObjectError + 2103, cModuleName & ".OracleAdmin_SwitchEnvironment", _
+                      "Unable to connect to DSN: " & dsnName
+        End If
     End If
 
     If (Len(linkedTableFromSchema) = 0 Xor Len(linkedTableToSchema) = 0) Then
