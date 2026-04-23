@@ -10,8 +10,8 @@
 ' Provides the core Oracle data-access layer for this Access application.
 '
 ' This module is the primary dependency for Oracle query execution and is designed
-' for a passthrough-first architecture using DAO QueryDefs and ODBC connection
-' strings, without requiring bound forms or persistent Oracle linked tables.
+' for a passthrough-first architecture using ADO / DAO and ODBC connection strings,
+' without requiring bound forms or persistent Oracle linked tables.
 '
 '
 ' Responsibilities
@@ -130,8 +130,9 @@
 '    Used after login when modOracleSession contains a credentialed connection
 '    string for the current user.
 '
-' When a runtime session exists, passthrough helpers automatically prefer that
-' credentialed connection string over a DSN-only connection.
+' When a runtime session exists, query helpers prefer that credentialed connection
+' string over a DSN-only connection. Runtime session queries use ADO directly to
+' avoid stale ODBC-session reuse inside the Access/DAO engine across re-logins.
 '
 '
 ' Important architecture note
@@ -217,6 +218,151 @@ Private Function OpenIsolatedCurrentDb(ByRef ws As DAO.Workspace) As DAO.Databas
 
 Cleanup:
     Set dbCurrent = Nothing
+
+End Function
+
+Private Function Get_Runtime_ADO_Conn_Str(Optional ByVal sDSN As String = "") As String
+
+    Dim sConn As String
+
+    sConn = Get_Runtime_ODBC_Conn_Str(sDSN)
+
+    If Left$(sConn, 5) = "ODBC;" Then
+        sConn = Mid$(sConn, 6)
+    End If
+
+    Get_Runtime_ADO_Conn_Str = sConn
+
+End Function
+
+Private Function PTQ_SelectAdo(ByVal sDSN As String, ByVal sSQL As String) As Variant
+
+    Dim conn As Object
+    Dim rs As Object
+
+    On Error GoTo HandleErr
+
+    Set conn = CreateObject("ADODB.Connection")
+    conn.Open Get_Runtime_ADO_Conn_Str(sDSN)
+    Set rs = conn.Execute(sSQL)
+
+    If rs.EOF Then
+        PTQ_SelectAdo = Null
+    Else
+        PTQ_SelectAdo = rs.Fields(0).Value
+    End If
+
+Cleanup:
+    On Error Resume Next
+    If Not rs Is Nothing Then
+        If rs.State <> 0 Then rs.Close
+    End If
+    Set rs = Nothing
+
+    If Not conn Is Nothing Then
+        If conn.State <> 0 Then conn.Close
+    End If
+    Set conn = Nothing
+    Exit Function
+
+HandleErr:
+    Err.Raise _
+        vbObjectError + 1040, _
+        cModuleName & ".PTQ_SelectAdo", _
+        "ADO scalar query failed." & vbCrLf & _
+        "DSN: " & sDSN & vbCrLf & _
+        "SQL: " & sSQL & vbCrLf & _
+        "Details: " & Err.Description
+
+End Function
+
+Private Sub PTQ_ExecuteAdo( _
+    ByVal sDSN As String, _
+    ByVal sSQL As String, _
+    Optional ByVal timeoutSeconds As Long = 60 _
+)
+
+    Dim conn As Object
+
+    On Error GoTo HandleErr
+
+    Set conn = CreateObject("ADODB.Connection")
+    conn.CommandTimeout = timeoutSeconds
+    conn.Open Get_Runtime_ADO_Conn_Str(sDSN)
+    conn.Execute sSQL
+
+Cleanup:
+    On Error Resume Next
+    If Not conn Is Nothing Then
+        If conn.State <> 0 Then conn.Close
+    End If
+    Set conn = Nothing
+    Exit Sub
+
+HandleErr:
+    Err.Raise _
+        vbObjectError + 1041, _
+        cModuleName & ".PTQ_ExecuteAdo", _
+        "ADO execute failed." & vbCrLf & _
+        "DSN: " & sDSN & vbCrLf & _
+        "SQL: " & sSQL & vbCrLf & _
+        "Details: " & Err.Description
+
+End Sub
+
+Private Function PTQ_GetRowsAdo( _
+    ByVal sDSN As String, _
+    ByVal sSQL As String _
+) As Collection
+
+    Dim conn As Object
+    Dim rs As Object
+    Dim rows As Collection
+    Dim rowDict As Object
+    Dim lFieldIndex As Long
+
+    On Error GoTo HandleErr
+
+    Set rows = New Collection
+    Set conn = CreateObject("ADODB.Connection")
+    conn.Open Get_Runtime_ADO_Conn_Str(sDSN)
+    Set rs = conn.Execute(sSQL)
+
+    Do While Not rs.EOF
+        Set rowDict = CreateObject("Scripting.Dictionary")
+        rowDict.CompareMode = vbTextCompare
+
+        For lFieldIndex = 0 To rs.Fields.Count - 1
+            rowDict.Add rs.Fields(lFieldIndex).Name, rs.Fields(lFieldIndex).Value
+        Next lFieldIndex
+
+        rows.Add rowDict
+        rs.MoveNext
+    Loop
+
+    Set PTQ_GetRowsAdo = rows
+
+Cleanup:
+    On Error Resume Next
+    If Not rs Is Nothing Then
+        If rs.State <> 0 Then rs.Close
+    End If
+    Set rs = Nothing
+
+    If Not conn Is Nothing Then
+        If conn.State <> 0 Then conn.Close
+    End If
+    Set conn = Nothing
+    Exit Function
+
+HandleErr:
+    Err.Raise _
+        vbObjectError + 1042, _
+        cModuleName & ".PTQ_GetRowsAdo", _
+        "ADO row retrieval failed." & vbCrLf & _
+        "DSN: " & sDSN & vbCrLf & _
+        "SQL: " & sSQL & vbCrLf & _
+        "Details: " & Err.Description
 
 End Function
 
@@ -535,6 +681,11 @@ Public Function PTQ_Select(ByVal sDSN As String, ByVal sSQL As String) As Varian
 
     On Error GoTo HandleErr
 
+    If OracleSession_IsConnected() Then
+        PTQ_Select = PTQ_SelectAdo(sDSN, sSQL)
+        Exit Function
+    End If
+
     Set db = OpenIsolatedCurrentDb(ws)
     Set qdfTemp = CreatePassthroughQueryDef(db, sDSN, sSQL, True)
     Set rs = qdfTemp.OpenRecordset(dbOpenSnapshot)
@@ -643,6 +794,11 @@ Public Sub PTQ_Execute( _
 
     On Error GoTo HandleErr
 
+    If OracleSession_IsConnected() Then
+        PTQ_ExecuteAdo sDSN, sSQL, timeoutSeconds
+        Exit Sub
+    End If
+
     Set db = OpenIsolatedCurrentDb(ws)
     Set qdfTemp = CreatePassthroughQueryDef(db, sDSN, sSQL, False, timeoutSeconds)
 
@@ -707,6 +863,11 @@ Public Function PTQ_GetRows( _
     Dim fld As DAO.Field
 
     On Error GoTo HandleErr
+
+    If OracleSession_IsConnected() Then
+        Set PTQ_GetRows = PTQ_GetRowsAdo(sDSN, sSQL)
+        Exit Function
+    End If
 
     Set rows = New Collection
     Set db = OpenIsolatedCurrentDb(ws)
