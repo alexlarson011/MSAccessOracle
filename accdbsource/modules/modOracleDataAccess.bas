@@ -255,12 +255,15 @@ End Function
 
 Private Function ResolveDefaultDSN(Optional ByVal sDSN As String = "") As String
 
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".ResolveDefaultDSN - input: [" & sDSN & "]"
     sDSN = Trim$(sDSN)
 
     If Len(sDSN) = 0 Then
+        Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".ResolveDefaultDSN - calling Get_DB_DSN"
         sDSN = Get_DB_DSN()
     End If
 
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".ResolveDefaultDSN - output: [" & sDSN & "]"
     ResolveDefaultDSN = sDSN
 
 End Function
@@ -442,7 +445,9 @@ Public Function Get_DB_Env() As String
 End Function
 
 Public Function Get_DB_DSN() As String
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_DB_DSN - start"
     Get_DB_DSN = Get_tblConn_Value("DSN", "")
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_DB_DSN - value: [" & Get_DB_DSN & "]"
 End Function
 
 Public Function Get_DB_DSN_Init() As String
@@ -515,7 +520,9 @@ Private Function Get_tblConn_Value(ByVal fieldName As String, ByVal DefaultValue
 
     On Error GoTo HandleErr
 
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_tblConn_Value - field: " & fieldName
     v = DLookup(fieldName, "tblConn")
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_tblConn_Value - DLookup returned"
 
     If IsNull(v) Then
         Get_tblConn_Value = DefaultValue
@@ -523,9 +530,12 @@ Private Function Get_tblConn_Value(ByVal fieldName As String, ByVal DefaultValue
         Get_tblConn_Value = CStr(v)
     End If
 
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_tblConn_Value - output: [" & Get_tblConn_Value & "]"
+
     Exit Function
 
 HandleErr:
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Get_tblConn_Value - ERROR " & Err.Number & ": " & Err.Description
     Get_tblConn_Value = DefaultValue
 
 End Function
