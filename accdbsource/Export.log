@@ -5,163 +5,111 @@ VCS Version 4.1.2
 Full Path: C:\repos\MSAccessOracle\StatelessShell.accdb
 Export Folder: C:\repos\MSAccessOracle\accdbsource\
 Using Fast Save
-4/23/2026 12:10:36 PM
+4/23/2026 12:27:51 PM
 -------------------------------------
 Scanning for changes...
+No modified db connections found in this database.
+  Removing orphaned file: C:\repos\MSAccessOracle\accdbsource\db-connection.json
+No modified project found in this database.
+No modified vb project found in this database.
+No modified vbe references found in this database.
 No modified vbe forms found in this database.
+No modified proj properties found in this database.
 No modified saved specs found in this database.
+No modified modules found in this database.
 No modified commandbars found in this database.
+No modified shared images found in this database.
+No modified themes found in this database.
 No modified imex specs found in this database.
+No modified tables found in this database.
+No modified queries found in this database.
+  Removing orphaned file: C:\repos\MSAccessOracle\accdbsource\queries\ptqTest.bas
+  Removing orphaned file: C:\repos\MSAccessOracle\accdbsource\queries\ptqTest.sql
 No modified macros found in this database.
 No modified reports found in this database.
 No modified table data found in this database.
 No modified table data macros found in this database.
 No modified relations found in this database.
+No modified doc properties found in this database.
+No modified nav pane groups found in this database.
 No modified hidden attributes found in this database.
--------------------------------------
-Exporting db connections...   
-  Database Connection
-[1]
--------------------------------------
-Exporting project...          
-  StatelessShell.accdb
-[1]
--------------------------------------
-Exporting vb project...       
-  Stateless_Shell
-[1]
--------------------------------------
-Exporting vbe references...   
-  stdole
-[2]
--------------------------------------
-Exporting proj properties...  
-  Current Project Properties (Access)
-[2]
--------------------------------------
-Exporting modules...          
-  modIniConfig
-  clsOracleFormField
-  modOracleAdmin
-  modOracleDataAccess
-  modOracleFormEngine
-  modOracleLinking
-  modOracleSession
-[7]
--------------------------------------
-Exporting shared images...    
-  mnDOTlogo_Cropped-100x50
-  question25px
-[2]
--------------------------------------
-Exporting themes...           
-  Retrospect
-[1]
 -------------------------------------
 Exporting db properties...    
   Database Properties (DAO)
 [33]
 -------------------------------------
-Exporting tables...           
-  tblConn
-    Sanitized in 0.003 seconds.
-  tblConn (SQL)
-[1]
--------------------------------------
-Exporting queries...          
-  ptqTest
-    Sanitized in 0.001 seconds.
-  ptqTest (SQL)
-[1]
--------------------------------------
 Exporting forms...            
   frmLogin
-    Sanitized in 0.015 seconds.
+    Sanitized in 0.013 seconds.
   frmOraclePasswordChange
-    Sanitized in 0.015 seconds.
+    Sanitized in 0.006 seconds.
 [2]
 -------------------------------------
-Exporting doc properties...   
-  Database Documents
-[3]
--------------------------------------
-Exporting nav pane groups...  
-  Groups
-[1]
--------------------------------------
-Done. (2.28 seconds)
+Done. (1.66 seconds)
 
 --------------------------------------------------
                 PERFORMANCE REPORTS
 --------------------------------------------------
 Category                      Count     Seconds
 --------------------------------------------------
-Forms                         2         0.88
+Forms                         2         0.77
 DB Properties                 33        0.27
-Modules                       7         0.20
-Doc Properties                3         0.11
-Shared Images                 2         0.10
-Nav Pane Groups               1         0.09
-DB Connections                1         0.09
-VBE References                2         0.07
-Tables                        1         0.06
-Themes                        1         0.05
-Proj Properties               2         0.05
-Queries                       1         0.05
-VB Project                    1         0.04
-Project                       1         0.04
+Doc Properties                0         0.06
+Modules                       0         0.06
+VBE References                0         0.05
+Nav Pane Groups               0         0.04
+Shared Images                 0         0.04
+DB Connections                0         0.03
+Proj Properties               0         0.03
 Hidden Attributes             0         0.02
+Project                       0         0.02
+Themes                        0         0.02
+VB Project                    0         0.02
 CommandBars                   0         0.01
+Tables                        0         0.01
+Queries                       0         0.01
 Table Data                    0         0.01
 Relations                     0         0.00
 Table Data Macros             0         0.00
-Macros                        0         0.00
-Reports                       0         0.00
 IMEX Specs                    0         0.00
 VBE Forms                     0         0.00
 Saved Specs                   0         0.00
+Reports                       0         0.00
+Macros                        0         0.00
 --------------------------------------------------
-TOTALS:                       58        2.14
+TOTALS:                       35        1.47
 --------------------------------------------------
 
 --------------------------------------------------
 Operations                    Count     Seconds
 --------------------------------------------------
-Convert to JSON               620       0.35
-Increment Progress            65        0.31
+Convert to JSON               526       0.29
 Scan DB Objects               1         0.22
-Clear Orphaned Files          16        0.09
-Console Updates               4         0.07
-Export VBE Module             7         0.07
-Compute SHA256                114       0.06
-Write File                    25        0.04
-App.SaveAsText()              3         0.03
-Sanitize File                 3         0.03
-Get File Property Hash        44        0.03
+Clear Orphaned Files          16        0.10
+Increment Progress            27        0.07
+Compute SHA256                45        0.06
+Console Updates               3         0.05
+App.SaveAsText()              2         0.03
 Parse JSON                    1         0.02
-Get VBA Hash                  16        0.01
-Delete File                   16        0.01
-App.ExportXML()               1         0.01
-Sanitize VBA Code             9         0.01
-Read File                     12        0.01
-Export Theme                  1         0.01
-Quick Count Files             1         0.00
-Read File Bytes               12        0.00
+Sanitize File                 2         0.02
+Write File                    5         0.01
+Quick Count Files             1         0.01
+Get VBA Hash                  9         0.01
+Delete File                   8         0.01
+Get File Property Hash        6         0.01
 Quick Count Objects           1         0.00
-modFileAccess.VerifyPath      32        0.00
-Write Binary File             2         0.00
-Get Modified Date             46        0.00
-Sanitize XML                  1         0.00
-Save Table SQL                1         0.00
-Check for linked table        2         0.00
+Read File DevMode             2         0.00
 Parse JSON ISO Date           45        0.00
 Close Open Objects            1         0.00
-Read File DevMode             2         0.00
-Save Query SQL                1         0.00
-Format XML                    1         0.00
+Check for linked table        2         0.00
+Read File                     3         0.00
+Sanitize VBA Code             2         0.00
+Read File Bytes               2         0.00
+modFileAccess.VerifyPath      7         0.00
+Get Modified Date             5         0.00
 modFileAccess.GetUncPath      3         0.00
 --------------------------------------------------
-Other Operations                        0.88
+Other Operations                        0.74
 --------------------------------------------------
 
 

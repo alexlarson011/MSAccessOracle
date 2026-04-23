@@ -3,4 +3,3 @@ StatelessShell.accdb
 StatelessShell_VCSBackup*.accdb
 accdbsource/Build.log
 accdbsource/vcs-index.json
-accdbsource/queries/*
