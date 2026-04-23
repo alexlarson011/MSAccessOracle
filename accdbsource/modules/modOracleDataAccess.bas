@@ -344,7 +344,9 @@ Private Function PTQ_GetRowsAdo( _
     Dim rs As Object
     Dim rows As Collection
     Dim rowDict As Object
+    Dim vData As Variant
     Dim lFieldIndex As Long
+    Dim lRowIndex As Long
 
     On Error GoTo HandleErr
 
@@ -353,17 +355,20 @@ Private Function PTQ_GetRowsAdo( _
     conn.Open Get_Runtime_ADO_Conn_Str(sDSN)
     Set rs = conn.Execute(sSQL)
 
-    Do While Not rs.EOF
-        Set rowDict = CreateObject("Scripting.Dictionary")
-        rowDict.CompareMode = vbTextCompare
+    If Not rs.EOF Then
+        vData = rs.GetRows
 
-        For lFieldIndex = 0 To rs.Fields.Count - 1
-            rowDict.Add rs.Fields(lFieldIndex).Name, rs.Fields(lFieldIndex).Value
-        Next lFieldIndex
+        For lRowIndex = LBound(vData, 2) To UBound(vData, 2)
+            Set rowDict = CreateObject("Scripting.Dictionary")
+            rowDict.CompareMode = vbTextCompare
 
-        rows.Add rowDict
-        rs.MoveNext
-    Loop
+            For lFieldIndex = LBound(vData, 1) To UBound(vData, 1)
+                rowDict.Add rs.Fields(lFieldIndex).Name, vData(lFieldIndex, lRowIndex)
+            Next lFieldIndex
+
+            rows.Add rowDict
+        Next lRowIndex
+    End If
 
     Set PTQ_GetRowsAdo = rows
 

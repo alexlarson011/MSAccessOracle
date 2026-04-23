@@ -542,6 +542,107 @@ Ofm_LoadListControlBySql _
 ```
 
 
+## 6B. Multi-column listbox pattern
+
+For a multi-column listbox in this architecture, the pattern is:
+
+1. return multiple columns from Oracle SQL
+2. load the listbox with `Ofm_LoadListControlBySql`
+3. set `BoundColumn` to the key/code column
+4. use `ColumnWidths` to hide or show columns
+5. read the selected value from the listbox's `Value`
+
+Example:
+
+```vb
+Ofm_LoadListControlBySql _
+    Me, _
+    "lstRecords", _
+    Join(Array( _
+        "SELECT RECORD_ID, RECORD_NAME, STATUS_TEXT", _
+        "FROM APP_RECORD_VW", _
+        "ORDER BY RECORD_NAME" _
+    ), vbCrLf), _
+    1, _
+    2, _
+    False, _
+    "", _
+    "0;2.0;1.2"""
+```
+
+That means:
+
+- Oracle returns three columns:
+  - `RECORD_ID`
+  - `RECORD_NAME`
+  - `STATUS_TEXT`
+- the listbox stores column 1 as the bound value
+- the first column is hidden by `"0;..."`
+- the user sees the name and status columns
+
+To get the selected key:
+
+```vb
+Dim selectedId As Variant
+
+selectedId = Me.lstRecords.Value
+```
+
+To inspect the selected row's returned columns:
+
+```vb
+Debug.Print Me.lstRecords.Column(0)  ' RECORD_ID
+Debug.Print Me.lstRecords.Column(1)  ' RECORD_NAME
+Debug.Print Me.lstRecords.Column(2)  ' STATUS_TEXT
+```
+
+Important Access detail:
+
+- `BoundColumn` is one-based
+- `.Column(index)` is zero-based
+
+Typical double-click navigation pattern:
+
+```vb
+Private Sub lstRecords_DblClick(Cancel As Integer)
+
+    If IsNull(Me.lstRecords.Value) Then Exit Sub
+
+    DoCmd.OpenForm "frmAppRecord", , , , , , Me.lstRecords.Value
+
+End Sub
+```
+
+You can also define the listbox through `clsOracleFormField` metadata:
+
+```vb
+Set f = Ofm_AddField(mFields, "RECORD_ID", "lstRecords", False, False, False)
+f.ControlKind = "LISTBOX"
+f.LookupSql = Join(Array( _
+    "SELECT RECORD_ID, RECORD_NAME, STATUS_TEXT", _
+    "FROM APP_RECORD_VW", _
+    "ORDER BY RECORD_NAME" _
+), vbCrLf)
+f.LookupBoundColumn = 1
+f.LookupDisplayColumn = 2
+f.LookupColumnWidths = "0;2.0;1.2"""
+```
+
+Then load it with:
+
+```vb
+Ofm_LoadLookupControls Me, mFields
+```
+
+Design recommendation:
+
+- for navigation/search listboxes, it is often cleaner to keep the listbox outside
+  the editable record field collection unless its selected value is truly part of the
+  record-edit model
+- for listboxes that are part of the form's actual input model, defining them through
+  `clsOracleFormField` can make sense
+
+
 ## 7. Loading an existing base-table record
 
 The simplest load path is `Ofm_LoadForm`.
