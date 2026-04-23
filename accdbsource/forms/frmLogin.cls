@@ -74,7 +74,7 @@ Attribute VB_Exposed = False
 '
 ' Optional dependencies:
 '
-'     - mdlManageConfigINI (or equivalent config module) if ALLOW_CUSTOM_DSN = True
+'     - modIniConfig (or equivalent config module) if ALLOW_CUSTOM_DSN = True
 '     - Outlook automation if the Help button sends email
 '
 '
@@ -385,6 +385,8 @@ Private Sub btnHelp_Click()
     Dim outlookApp As Object
     Dim emailItem As Object
 
+    On Error GoTo ErrHandler
+
     MsgBox HELP_BTN_TXT, vbInformation
 
     If Not PROMPT_SENDEMAIL Then Exit Sub
@@ -404,6 +406,11 @@ Private Sub btnHelp_Click()
 Cleanup:
     Set emailItem = Nothing
     Set outlookApp = Nothing
+    Exit Sub
+
+ErrHandler:
+    MsgBox "Unable to open the help email workflow." & vbCrLf & vbCrLf & Err.Description, vbExclamation
+    Resume Cleanup
 
 End Sub
 
@@ -441,7 +448,7 @@ HandleErr:
 
 End Function
 
-Sub UserManageCustomDSN()
+Private Sub UserManageCustomDSN()
 
     Dim response As Variant
     Dim question As String

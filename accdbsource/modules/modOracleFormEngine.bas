@@ -527,8 +527,8 @@ Public Sub Ofm_InitNewForm( _
 
         v = Null
 
-        If Not IsNull(f.defaultValue) Then
-            v = f.defaultValue
+        If Not IsNull(f.DefaultValue) Then
+            v = f.DefaultValue
         ElseIf UCase$(f.ControlKind) = "CHECKBOX" Then
             If f.UseCustomBooleanMapping Then
                 v = False

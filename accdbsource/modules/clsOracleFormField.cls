@@ -324,15 +324,15 @@ End Property
 ' Metadata properties
 '------------------------------------------------------------------------------------
 
-Public Property Get defaultValue() As Variant
-    defaultValue = pDefaultValue
+Public Property Get DefaultValue() As Variant
+    DefaultValue = pDefaultValue
 End Property
 
-Public Property Let defaultValue(ByVal Value As Variant)
+Public Property Let DefaultValue(ByVal Value As Variant)
     pDefaultValue = Value
 End Property
 
-Public Property Set defaultValue(ByVal Value As Variant)
+Public Property Set DefaultValue(ByVal Value As Variant)
     pDefaultValue = Value
 End Property
 

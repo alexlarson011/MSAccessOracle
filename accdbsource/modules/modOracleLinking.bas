@@ -204,8 +204,8 @@ Public Function OracleLink_GetLinkedTableDSN(ByVal sTableName As String) As Stri
 
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
-    Dim iStartPos As Long
-    Dim iEndPos As Long
+    Dim lStartPos As Long
+    Dim lEndPos As Long
     Dim sConnect As String
 
     Set db = CurrentDb
@@ -220,12 +220,12 @@ Public Function OracleLink_GetLinkedTableDSN(ByVal sTableName As String) As Stri
 
     If Len(sConnect) = 0 Then Exit Function
 
-    iStartPos = InStr(1, sConnect, "DSN=", vbTextCompare)
+    lStartPos = InStr(1, sConnect, "DSN=", vbTextCompare)
 
-    If iStartPos > 0 Then
-        iEndPos = InStr(iStartPos, sConnect & ";", ";")
-        If iEndPos > 0 Then
-            OracleLink_GetLinkedTableDSN = UCase$(Mid$(sConnect, iStartPos + 4, iEndPos - iStartPos - 4))
+    If lStartPos > 0 Then
+        lEndPos = InStr(lStartPos, sConnect & ";", ";")
+        If lEndPos > 0 Then
+            OracleLink_GetLinkedTableDSN = UCase$(Mid$(sConnect, lStartPos + 4, lEndPos - lStartPos - 4))
         End If
     End If
 
@@ -239,7 +239,7 @@ Public Function OracleLink_GetLinkedTableSchema(ByVal sTableName As String) As S
 
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
-    Dim iDotPos As Long
+    Dim lDotPos As Long
     Dim sSourceTableName As String
 
     Set db = CurrentDb
@@ -254,10 +254,10 @@ Public Function OracleLink_GetLinkedTableSchema(ByVal sTableName As String) As S
 
     If Len(sSourceTableName) = 0 Then Exit Function
 
-    iDotPos = InStr(1, sSourceTableName, ".", vbTextCompare)
+    lDotPos = InStr(1, sSourceTableName, ".", vbTextCompare)
 
-    If iDotPos > 1 Then
-        OracleLink_GetLinkedTableSchema = UCase$(Left$(sSourceTableName, iDotPos - 1))
+    If lDotPos > 1 Then
+        OracleLink_GetLinkedTableSchema = UCase$(Left$(sSourceTableName, lDotPos - 1))
     End If
 
 Cleanup:
@@ -270,7 +270,7 @@ Public Function OracleLink_GetLinkedTableSourceName(ByVal sTableName As String) 
 
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
-    Dim iDotPos As Long
+    Dim lDotPos As Long
     Dim sSourceTableName As String
 
     Set db = CurrentDb
@@ -285,10 +285,10 @@ Public Function OracleLink_GetLinkedTableSourceName(ByVal sTableName As String) 
 
     If Len(sSourceTableName) = 0 Then Exit Function
 
-    iDotPos = InStr(1, sSourceTableName, ".", vbTextCompare)
+    lDotPos = InStr(1, sSourceTableName, ".", vbTextCompare)
 
-    If iDotPos > 0 Then
-        OracleLink_GetLinkedTableSourceName = Mid$(sSourceTableName, iDotPos + 1)
+    If lDotPos > 0 Then
+        OracleLink_GetLinkedTableSourceName = Mid$(sSourceTableName, lDotPos + 1)
     Else
         OracleLink_GetLinkedTableSourceName = sSourceTableName
     End If

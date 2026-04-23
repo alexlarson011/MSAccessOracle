@@ -1,0 +1,157 @@
+﻿-------------------------------------
+Beginning build from Source
+StatelessShell.accdb
+VCS Version 4.1.2
+Full Path: C:\Users\alexl\OneDrive\repos\MSAccessOracle\StatelessShell.accdb
+Export Folder: C:\Users\alexl\OneDrive\repos\MSAccessOracle\accdbsource\
+4/23/2026 9:14:51 AM
+-------------------------------------
+Created blank database for import. (v12)
+Removing non built-in references...
+  Removed DAO
+  Removed stdole
+Scanning source files...
+No vbe forms source files found.
+No saved specs source files found.
+No commandbars source files found.
+No imex specs source files found.
+No macros source files found.
+No reports source files found.
+No table data macros source files found.
+No relations source files found.
+No hidden attributes source files found.
+-------------------------------------
+-------------------------------------
+Importing db connections...   
+  db-connection.json
+[1]
+-------------------------------------
+Importing project...          
+  project.json
+[1]
+-------------------------------------
+Importing vb project...       
+  vbe-project.json
+[1]
+-------------------------------------
+Importing vbe references...   
+  vbe-references.json
+[1]
+-------------------------------------
+Importing proj properties...  
+  proj-properties.json
+[1]
+-------------------------------------
+Importing modules...          
+  modIniConfig.bas
+  modOracleAdmin.bas
+  modOracleDataAccess.bas
+  modOracleFormEngine.bas
+  modOracleLinking.bas
+  modOracleSession.bas
+  clsOracleFormField.cls
+[7]
+-------------------------------------
+Importing shared images...    
+  mnDOTlogo_Cropped-100x50.json
+  question25px.json
+[2]
+-------------------------------------
+Importing themes...           
+  Retrospect.thmx
+[1]
+-------------------------------------
+Importing db properties...    
+  dbs-properties.json
+[1]
+-------------------------------------
+Importing tables...           
+  tblConn.xml
+[1]
+-------------------------------------
+Importing queries...          
+  ptqTest.bas
+[1]
+-------------------------------------
+Importing forms...            
+  frmLogin.bas
+[1]
+-------------------------------------
+Importing table data...       
+  tblConn.xml
+[1]
+-------------------------------------
+Importing doc properties...   
+  documents.json
+[1]
+-------------------------------------
+Importing nav pane groups...  
+  nav-pane-groups.json
+[1]
+-------------------------------------
+Done. (2.35 seconds)
+
+--------------------------------------------------
+                PERFORMANCE REPORTS
+--------------------------------------------------
+Category                      Count     Seconds
+--------------------------------------------------
+Modules                       7         0.45
+Tables                        1         0.34
+Forms                         1         0.23
+DB Connections                1         0.11
+Queries                       1         0.09
+Shared Images                 2         0.07
+DB Properties                 1         0.06
+Nav Pane Groups               1         0.06
+Proj Properties               1         0.05
+VBE References                1         0.04
+Themes                        1         0.04
+Doc Properties                1         0.03
+Table Data                    1         0.03
+VB Project                    1         0.03
+Project                       1         0.02
+--------------------------------------------------
+TOTALS:                       22        1.63
+--------------------------------------------------
+
+--------------------------------------------------
+Operations                    Count     Seconds
+--------------------------------------------------
+Read File                     21        0.37
+Create new database           1         0.25
+Increment Progress            22        0.20
+Import VBE Module             7         0.13
+Scan Source Files             1         0.12
+App.LoadFromText()            2         0.11
+Read File Bytes               5         0.07
+Parse JSON ISO Date           23        0.05
+Get File List                 18        0.04
+Convert to JSON               149       0.04
+Console Updates               4         0.03
+Get File Property Hash        21        0.02
+Clear References              1         0.02
+modVCSUtility.LoadComponentFr 
+omText                        2         0.02
+Parse JSON                    12        0.01
+Parse VBA Module              7         0.01
+Write File                    8         0.01
+Get VBA Hash                  8         0.01
+Delete File                   13        0.01
+App.SaveAsText()              1         0.00
+Get Unused Resource Name      2         0.00
+Compute SHA256                42        0.00
+Get Modified Date             44        0.00
+modFileAccess.VerifyPath      12        0.00
+Add GUID References           2         0.00
+Check for linked table        1         0.00
+Save Stream to File           2         0.00
+Load Stream from File         2         0.00
+Enc. utf-8 as utf-16          2         0.00
+Copy Stream                   2         0.00
+modFileAccess.GetUncPath      1         0.00
+--------------------------------------------------
+Other Operations                        0.83
+--------------------------------------------------
+
+

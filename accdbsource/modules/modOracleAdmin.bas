@@ -475,8 +475,8 @@ Public Function OracleAdmin_Get_PTQ_DSN(ByVal sQueryName As String) As String
 
     Dim db As DAO.Database
     Dim qdf As DAO.QueryDef
-    Dim iStartPos As Long
-    Dim iEndPos As Long
+    Dim lStartPos As Long
+    Dim lEndPos As Long
     Dim sConnect As String
 
     Set db = CurrentDb
@@ -491,12 +491,12 @@ Public Function OracleAdmin_Get_PTQ_DSN(ByVal sQueryName As String) As String
 
     If Len(sConnect) = 0 Then Exit Function
 
-    iStartPos = InStr(1, sConnect, "DSN=", vbTextCompare)
+    lStartPos = InStr(1, sConnect, "DSN=", vbTextCompare)
 
-    If iStartPos > 0 Then
-        iEndPos = InStr(iStartPos, sConnect & ";", ";")
-        If iEndPos > 0 Then
-            OracleAdmin_Get_PTQ_DSN = UCase$(Mid$(sConnect, iStartPos + 4, iEndPos - iStartPos - 4))
+    If lStartPos > 0 Then
+        lEndPos = InStr(lStartPos, sConnect & ";", ";")
+        If lEndPos > 0 Then
+            OracleAdmin_Get_PTQ_DSN = UCase$(Mid$(sConnect, lStartPos + 4, lEndPos - lStartPos - 4))
         End If
     End If
 
