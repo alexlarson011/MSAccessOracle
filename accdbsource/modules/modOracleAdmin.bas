@@ -22,7 +22,8 @@
 '     - validating tblConn configuration
 '     - validating DSN presence and DSN connectivity
 '     - exposing current Oracle user / role checks
- '     - changing the current Oracle user's password
+'     - changing the current Oracle user's password
+'     - switching application environment / DSN / schema targets
 '     - inspecting passthrough queries
 '     - reading passthrough query DSNs
 '     - bulk-updating passthrough query DSNs
@@ -52,8 +53,8 @@
 ' password helpers:
 '     OracleAdmin_ChangeCurrentUserPassword
 '
-' switch environments
-'
+' environment switching:
+'     OracleAdmin_SwitchEnvironment
 '
 ' passthrough query inspection:
 '     OracleAdmin_IsPassthroughQuery
@@ -91,6 +92,10 @@
 ' Validate a DSN can be reached:
 '
 '     OracleAdmin_Validate_DSNConnection Get_DB_DSN()
+
+' Switch application environment:
+'
+'     OracleAdmin_SwitchEnvironment "TEST", "MY_DATA_SOURCE_TEST", "MY_SCHEMA_TEST"
 '
 ' Bulk retarget passthrough queries:
 '
@@ -139,6 +144,7 @@
 '     - low-level SQL execution internals
 '     - form business logic
 '     - linked-table creation / relinking code
+'     - user-facing message boxes
 '
 ' Linked-table responsibilities belong in modOracleLinking.
 '

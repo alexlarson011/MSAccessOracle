@@ -68,6 +68,7 @@
 ' row materialization helpers:
 '     PTQ_GetRow
 '     PTQ_GetRows
+'     PTQ_Rs (retired; raises an error if called)
 '
 ' Oracle helpers:
 '     Get_ODBC_User
@@ -131,19 +132,25 @@
 '    string for the current user.
 '
 ' When a runtime session exists, query helpers prefer that credentialed connection
-' string over a DSN-only connection. Runtime session queries use ADO directly to
-' avoid stale ODBC-session reuse inside the Access/DAO engine across re-logins.
+' string over a DSN-only connection.
+'
+' Runtime session execution uses direct ADO connections for scalar, action, and row-
+' materialization helpers so re-login flows do not accidentally reuse stale Oracle
+' user state inside the Access/DAO ODBC layer.
 '
 '
 ' Important architecture note
 ' ---------------------------
 ' This module does NOT keep a persistent Oracle connection open.
 '
-' Each passthrough helper creates a temporary in-memory QueryDef, runs the SQL,
-' reads the result, and releases the QueryDef.
+' Pre-login / DSN-only connectivity helpers still use temporary DAO passthrough
+' QueryDefs.
 '
-' To reduce stale ODBC-session reuse inside Access/DAO, passthrough helpers open
-' the current Access database through a fresh isolated DAO workspace per call.
+' Logged-in runtime query helpers open short-lived ADO connections directly from the
+' stored runtime connection string.
+'
+' DAO passthrough work that still runs in DSN mode uses a fresh isolated workspace
+' per call to reduce stale ODBC-session reuse inside Access.
 '
 '
 ' Dependencies
@@ -179,6 +186,9 @@
 ' lists without depending on exact Oracle column-name casing.
 '
 ' Get_ODBC_Conn_Str remains the compatibility wrapper that uses the builder defaults.
+'
+' PTQ_Rs is intentionally retired because returning a DAO.Recordset from a temporary
+' passthrough object is not a stable contract for this architecture.
 '
 '
 ' Version

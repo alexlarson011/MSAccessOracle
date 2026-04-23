@@ -49,6 +49,14 @@
 ' typed getters:
 '     GetConfigLong
 '     GetConfigBoolean
+
+' compatibility wrappers:
+'     GetConfig
+'     SetConfig
+'     DeleteConfig
+'     ConfigKeyExists
+'     GetConfigLng
+'     GetConfigBool
 '
 ' file helpers:
 '     CleanIniFile
