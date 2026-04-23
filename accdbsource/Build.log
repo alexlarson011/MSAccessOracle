@@ -2,31 +2,29 @@
 Beginning build from Source
 StatelessShell.accdb
 VCS Version 4.1.2
-Full Path: C:\repos\MSAccessOracle\StatelessShell.accdb
-Export Folder: C:\repos\MSAccessOracle\accdbsource\
-4/23/2026 12:09:22 PM
+Full Path: C:\Users\alexl\OneDrive\repos\MSAccessOracle\StatelessShell.accdb
+Export Folder: C:\Users\alexl\OneDrive\repos\MSAccessOracle\accdbsource\
+4/23/2026 1:04:24 PM
 -------------------------------------
 Saving backup of original database...
-Saved as StatelessShell_VCSBackup.accdb.
+Saved as StatelessShell_VCSBackup2.accdb.
 Created blank database for import. (v12)
 Removing non built-in references...
   Removed DAO
   Removed stdole
 Scanning source files...
+No db connections source files found.
 No vbe forms source files found.
 No saved specs source files found.
 No commandbars source files found.
 No imex specs source files found.
+No queries source files found.
 No macros source files found.
 No reports source files found.
 No table data macros source files found.
 No relations source files found.
 No hidden attributes source files found.
 -------------------------------------
--------------------------------------
-Importing db connections...   
-  db-connection.json
-[1]
 -------------------------------------
 Importing project...          
   project.json
@@ -71,10 +69,6 @@ Importing tables...
   tblConn.xml
 [1]
 -------------------------------------
-Importing queries...          
-  ptqTest.bas
-[1]
--------------------------------------
 Importing forms...            
   frmLogin.bas
   frmOraclePasswordChange.bas
@@ -92,69 +86,66 @@ Importing nav pane groups...
   nav-pane-groups.json
 [1]
 -------------------------------------
-Done. (8.74 seconds)
+Done. (1.77 seconds)
 
 --------------------------------------------------
                 PERFORMANCE REPORTS
 --------------------------------------------------
 Category                      Count     Seconds
 --------------------------------------------------
-DB Connections                1         6.97
-Modules                       7         0.23
-DB Properties                 1         0.17
-Forms                         2         0.14
-Tables                        1         0.07
-Nav Pane Groups               1         0.06
-Shared Images                 2         0.05
-Doc Properties                1         0.04
-VBE References                1         0.04
+Modules                       7         0.34
+Forms                         2         0.28
+DB Properties                 1         0.09
+Project                       1         0.05
+Shared Images                 2         0.04
+Nav Pane Groups               1         0.04
+Tables                        1         0.04
+Table Data                    1         0.04
 Themes                        1         0.04
-Proj Properties               1         0.04
-Queries                       1         0.04
-VB Project                    1         0.04
-Project                       1         0.03
-Table Data                    1         0.03
+VBE References                1         0.03
+VB Project                    1         0.03
+Doc Properties                1         0.03
+Proj Properties               1         0.03
 --------------------------------------------------
-TOTALS:                       23        7.99
+TOTALS:                       21        1.07
 --------------------------------------------------
 
 --------------------------------------------------
 Operations                    Count     Seconds
 --------------------------------------------------
-Create new database           1         0.25
-Increment Progress            23        0.18
-Parse JSON                    12        0.10
-Convert to JSON               149       0.10
-Scan Source Files             1         0.09
-App.LoadFromText()            3         0.08
-Compute SHA256                44        0.07
-Console Updates               5         0.05
-Import VBE Module             7         0.02
-Get File List                 18        0.02
-Get File Property Hash        22        0.02
-Write File                    9         0.02
-Clear References              1         0.02
-modVCSUtility.LoadComponentFr 
-omText                        3         0.01
-Read File                     23        0.01
+Create new database           1         0.41
+Increment Progress            21        0.26
+App.LoadFromText()            2         0.17
+Import VBE Module             7         0.16
+Convert to JSON               148       0.07
+Console Updates               4         0.07
+Read File Bytes               3         0.05
+Get File List                 18        0.04
+Scan Source Files             1         0.02
+Get File Property Hash        20        0.02
+Parse JSON                    11        0.01
 Parse VBA Module              7         0.01
-Delete File                   16        0.01
 Get VBA Hash                  9         0.01
-Save Stream to File           3         0.01
-Get Modified Date             46        0.00
+Read File                     22        0.01
+Clear References              1         0.01
+Write File                    9         0.01
+Delete File                   13        0.01
+modVCSUtility.LoadComponentFr 
+omText                        2         0.01
+Compute SHA256                40        0.01
 Get Unused Resource Name      2         0.00
-Read File Bytes               6         0.00
+Get Modified Date             43        0.00
+modFileAccess.VerifyPath      13        0.00
+Save Stream to File           2         0.00
 Parse JSON ISO Date           45        0.00
-Add GUID References           2         0.00
-App.SaveAsText()              1         0.00
-modFileAccess.VerifyPath      15        0.00
 Check for linked table        1         0.00
-Load Stream from File         3         0.00
-Enc. utf-8 as utf-16          3         0.00
+Add GUID References           2         0.00
+Load Stream from File         2         0.00
+Enc. utf-8 as utf-16          2         0.00
+Copy Stream                   2         0.00
 modFileAccess.GetUncPath      1         0.00
-Copy Stream                   3         0.00
 --------------------------------------------------
-Other Operations                        7.64
+Other Operations                        0.39
 --------------------------------------------------
 
 

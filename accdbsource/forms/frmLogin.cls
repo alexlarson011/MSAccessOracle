@@ -67,6 +67,7 @@ Attribute VB_Exposed = False
 '     - clearer error handling
 '     - inline login status messaging inside the form
 '     - runtime credential injection for passthrough SQL
+'     - a driver-prompt fallback for expired Oracle passwords
 '     - optional DSN override behavior for per-machine custom configuration
 '
 '
@@ -116,6 +117,7 @@ Attribute VB_Exposed = False
 '
 ' password helpers:
 '     OpenPasswordChangeDialog
+'     PromptExpiredPasswordChangeViaDriver
 '
 ' login status helpers:
 '     ClearLoginStatus
@@ -303,7 +305,6 @@ Private Sub btnLogin_Click()
     Dim rs As Object
     Dim adoLoginConnectionString As String
     Dim runtimeConnectionString As String
-    Dim oraclePassExpired As Boolean
     Dim validatedOracleUser As String
     Dim ptqValidatedUser As String
     Dim sLoginErrorText As String
@@ -344,13 +345,15 @@ Private Sub btnLogin_Click()
         sLoginErrorText = Err.Description
 
         If InStr(1, sLoginErrorText, "ORA-28001", vbTextCompare) > 0 Then
-            oraclePassExpired = True
             Err.Clear
             On Error GoTo ErrHandler
             ShowLoginStatus _
-                "Your Oracle password is expired. Use the password change workflow to continue.", _
+                "Your Oracle password is expired. The Oracle driver password-change prompt will open if the driver supports it.", _
                 ShortLoginErrorDetails(sLoginErrorText)
-            OpenPasswordChangeDialog True
+            If PromptExpiredPasswordChangeViaDriver(Trim$(Nz(Me.txtUser, vbNullString))) Then
+                ShowLoginStatus "The Oracle driver password-change prompt completed. Enter your new password and click Login again."
+            End If
+            Me.txtPass = Null
             Me.txtPass.SetFocus
             GoTo Cleanup
         Else
@@ -523,6 +526,65 @@ Private Sub OpenPasswordChangeDialog(Optional ByVal fromExpiredPassword As Boole
     DoCmd.OpenForm CHANGE_PASSWORD_FORM_NM, , , , , acDialog, "USER=" & sUserName & ";MODE=" & sMode
 
 End Sub
+
+Private Function PromptExpiredPasswordChangeViaDriver(ByVal sUserName As String) As Boolean
+
+    Dim ws As DAO.Workspace
+    Dim dbCurrent As DAO.Database
+    Dim db As DAO.Database
+    Dim qdfPrompt As DAO.QueryDef
+    Dim rs As DAO.Recordset
+    Dim sConnect As String
+
+    On Error GoTo ErrHandler
+
+    Call OracleSession_Clear
+
+    Set dbCurrent = CurrentDb
+    Set ws = DBEngine.CreateWorkspace( _
+        "wsPwdPrompt_" & Replace$(Format$(Timer, "0.000"), ".", "_"), _
+        "admin", _
+        vbNullString, _
+        dbUseJet)
+    ws.IsolateODBCTrans = True
+    Set db = ws.OpenDatabase(dbCurrent.Name)
+    Set qdfPrompt = db.CreateQueryDef(vbNullString)
+
+    sConnect = "ODBC;DSN=" & Get_DB_DSN() & ";"
+
+    If Len(Trim$(sUserName)) > 0 Then
+        sConnect = sConnect & "UID=" & UCase$(Trim$(sUserName)) & ";"
+    End If
+
+    With qdfPrompt
+        .Connect = sConnect
+        .returnsRecords = True
+        .ODBCTimeout = 30
+        .sql = "SELECT USER FROM DUAL"
+    End With
+
+    Set rs = qdfPrompt.OpenRecordset(dbOpenSnapshot)
+    PromptExpiredPasswordChangeViaDriver = Not (rs.BOF And rs.EOF)
+
+Cleanup:
+    On Error Resume Next
+    If Not rs Is Nothing Then rs.Close
+    Set rs = Nothing
+    Set qdfPrompt = Nothing
+    If Not db Is Nothing Then db.Close
+    Set db = Nothing
+    If Not ws Is Nothing Then ws.Close
+    Set ws = Nothing
+    Set dbCurrent = Nothing
+    Exit Function
+
+ErrHandler:
+    ShowLoginStatus _
+        "The Oracle driver password-change prompt did not complete.", _
+        ShortLoginErrorDetails(Err.Description)
+    Resume Cleanup
+
+End Function
 
 Private Sub UserManageCustomDSN()
 
