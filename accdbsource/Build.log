@@ -4,8 +4,10 @@ StatelessShell.accdb
 VCS Version 4.1.2
 Full Path: C:\Users\alexl\OneDrive\repos\MSAccessOracle\StatelessShell.accdb
 Export Folder: C:\Users\alexl\OneDrive\repos\MSAccessOracle\accdbsource\
-4/23/2026 9:14:51 AM
+4/23/2026 10:27:54 AM
 -------------------------------------
+Saving backup of original database...
+Saved as StatelessShell_VCSBackup2.accdb.
 Created blank database for import. (v12)
 Removing non built-in references...
   Removed DAO
@@ -75,7 +77,8 @@ Importing queries...
 -------------------------------------
 Importing forms...            
   frmLogin.bas
-[1]
+  frmOraclePasswordChange.bas
+[2]
 -------------------------------------
 Importing table data...       
   tblConn.xml
@@ -89,69 +92,68 @@ Importing nav pane groups...
   nav-pane-groups.json
 [1]
 -------------------------------------
-Done. (2.35 seconds)
+Done. (1.29 seconds)
 
 --------------------------------------------------
                 PERFORMANCE REPORTS
 --------------------------------------------------
 Category                      Count     Seconds
 --------------------------------------------------
-Modules                       7         0.45
-Tables                        1         0.34
-Forms                         1         0.23
-DB Connections                1         0.11
-Queries                       1         0.09
-Shared Images                 2         0.07
+Modules                       7         0.29
+Forms                         2         0.15
+Shared Images                 2         0.06
 DB Properties                 1         0.06
-Nav Pane Groups               1         0.06
-Proj Properties               1         0.05
-VBE References                1         0.04
 Themes                        1         0.04
-Doc Properties                1         0.03
-Table Data                    1         0.03
-VB Project                    1         0.03
+DB Connections                1         0.03
+Tables                        1         0.02
+Table Data                    1         0.02
+Doc Properties                1         0.02
+Nav Pane Groups               1         0.02
+VB Project                    1         0.02
+VBE References                1         0.02
 Project                       1         0.02
+Proj Properties               1         0.01
+Queries                       1         0.01
 --------------------------------------------------
-TOTALS:                       22        1.63
+TOTALS:                       23        0.77
 --------------------------------------------------
 
 --------------------------------------------------
 Operations                    Count     Seconds
 --------------------------------------------------
-Read File                     21        0.37
 Create new database           1         0.25
-Increment Progress            22        0.20
-Import VBE Module             7         0.13
-Scan Source Files             1         0.12
-App.LoadFromText()            2         0.11
-Read File Bytes               5         0.07
-Parse JSON ISO Date           23        0.05
-Get File List                 18        0.04
+Increment Progress            23        0.18
+Import VBE Module             7         0.14
+App.LoadFromText()            3         0.10
+Get File List                 18        0.05
 Convert to JSON               149       0.04
+Read File Bytes               5         0.03
 Console Updates               4         0.03
-Get File Property Hash        21        0.02
+Scan Source Files             1         0.02
 Clear References              1         0.02
-modVCSUtility.LoadComponentFr 
-omText                        2         0.02
+Get File Property Hash        22        0.02
 Parse JSON                    12        0.01
+Read File                     23        0.01
 Parse VBA Module              7         0.01
-Write File                    8         0.01
-Get VBA Hash                  8         0.01
-Delete File                   13        0.01
-App.SaveAsText()              1         0.00
+Get VBA Hash                  9         0.01
+Write File                    9         0.01
+Delete File                   15        0.01
 Get Unused Resource Name      2         0.00
-Compute SHA256                42        0.00
-Get Modified Date             44        0.00
-modFileAccess.VerifyPath      12        0.00
+Get Modified Date             46        0.00
+modVCSUtility.LoadComponentFr 
+omText                        3         0.00
+Compute SHA256                44        0.00
+Parse JSON ISO Date           44        0.00
+modFileAccess.VerifyPath      15        0.00
+Save Stream to File           3         0.00
 Add GUID References           2         0.00
 Check for linked table        1         0.00
-Save Stream to File           2         0.00
-Load Stream from File         2         0.00
-Enc. utf-8 as utf-16          2         0.00
-Copy Stream                   2         0.00
+Enc. utf-8 as utf-16          3         0.00
+Load Stream from File         3         0.00
+Copy Stream                   3         0.00
 modFileAccess.GetUncPath      1         0.00
 --------------------------------------------------
-Other Operations                        0.83
+Other Operations                        0.34
 --------------------------------------------------
 
 

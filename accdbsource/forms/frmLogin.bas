@@ -215,7 +215,7 @@ Begin Form
                     Top =2040
                     Width =1200
                     Height =300
-                    TabIndex =3
+                    TabIndex =2
                     Name ="btnLogin"
                     Caption ="Login"
                     OnClick ="[Event Procedure]"
@@ -232,7 +232,7 @@ Begin Form
                     Top =2400
                     Width =1560
                     Height =300
-                    TabIndex =4
+                    TabIndex =3
                     Name ="btnChangePassword"
                     Caption ="Change Password"
                     OnClick ="[Event Procedure]"
@@ -249,7 +249,7 @@ Begin Form
                     Top =3000
                     Width =1200
                     Height =300
-                    TabIndex =5
+                    TabIndex =4
                     Name ="btnExit"
                     Caption ="Exit"
                     OnClick ="[Event Procedure]"
@@ -266,7 +266,7 @@ Begin Form
                     Top =3000
                     Width =1200
                     Height =300
-                    TabIndex =3
+                    TabIndex =5
                     Name ="btnHelp"
                     Caption ="Help"
                     OnClick ="[Event Procedure]"

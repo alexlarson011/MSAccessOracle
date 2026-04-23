@@ -196,6 +196,10 @@ Private Function OracleBoolSetting(ByVal bValue As Boolean) As String
     End If
 End Function
 
+Private Sub AppendConnPart(ByRef sConn As String, ByVal sKey As String, ByVal sValue As String)
+    sConn = sConn & sKey & "=" & sValue & ";"
+End Sub
+
 '------------------------------------------------------------------------------------
 ' tblConn getters / setters
 '------------------------------------------------------------------------------------
@@ -321,34 +325,20 @@ End Sub
 '------------------------------------------------------------------------------------
 
 Public Function Build_Oracle_ODBC_Conn_Str( _
-    Optional ByVal sDSN As String = "", _
-    Optional ByVal sUserName As String = "", _
-    Optional ByVal sPassword As String = "", _
-    Optional ByVal sDBA As String = "W", _
-    Optional ByVal bAPA As Boolean = True, _
-    Optional ByVal bEXC As Boolean = False, _
-    Optional ByVal bFEN As Boolean = True, _
-    Optional ByVal bQTO As Boolean = True, _
-    Optional ByVal lFRC As Long = 10, _
-    Optional ByVal lFDL As Long = 10, _
-    Optional ByVal bLOB As Boolean = True, _
-    Optional ByVal bRST As Boolean = True, _
-    Optional ByVal bBTD As Boolean = False, _
-    Optional ByVal bBNF As Boolean = False, _
-    Optional ByVal sBAM As String = "IfAllSuccessful", _
-    Optional ByVal sNUM As String = "NLS", _
-    Optional ByVal bDPM As Boolean = False, _
-    Optional ByVal bMTS As Boolean = True, _
-    Optional ByVal bMDI As Boolean = False, _
-    Optional ByVal bCSR As Boolean = False, _
-    Optional ByVal bFWC As Boolean = False, _
-    Optional ByVal lFBS As Long = 64000, _
-    Optional ByVal sTLO As String = "O", _
-    Optional ByVal lMLD As Long = 0, _
-    Optional ByVal bODA As Boolean = False, _
-    Optional ByVal bSTE As Boolean = False, _
-    Optional ByVal lTSZ As Long = 8192, _
-    Optional ByVal sAST As String = "FLOAT", _
+    Optional ByVal sDSN As String = "", Optional ByVal sUserName As String = "", _
+    Optional ByVal sPassword As String = "", Optional ByVal sDBA As String = "W", _
+    Optional ByVal bAPA As Boolean = True, Optional ByVal bEXC As Boolean = False, _
+    Optional ByVal bFEN As Boolean = True, Optional ByVal bQTO As Boolean = True, _
+    Optional ByVal lFRC As Long = 10, Optional ByVal lFDL As Long = 10, _
+    Optional ByVal bLOB As Boolean = True, Optional ByVal bRST As Boolean = True, _
+    Optional ByVal bBTD As Boolean = False, Optional ByVal bBNF As Boolean = False, _
+    Optional ByVal sBAM As String = "IfAllSuccessful", Optional ByVal sNUM As String = "NLS", _
+    Optional ByVal bDPM As Boolean = False, Optional ByVal bMTS As Boolean = True, _
+    Optional ByVal bMDI As Boolean = False, Optional ByVal bCSR As Boolean = False, _
+    Optional ByVal bFWC As Boolean = False, Optional ByVal lFBS As Long = 64000, _
+    Optional ByVal sTLO As String = "O", Optional ByVal lMLD As Long = 0, _
+    Optional ByVal bODA As Boolean = False, Optional ByVal bSTE As Boolean = False, _
+    Optional ByVal lTSZ As Long = 8192, Optional ByVal sAST As String = "FLOAT", _
     Optional ByVal lLPS As Long = 8192 _
 ) As String
 
@@ -370,37 +360,37 @@ Public Function Build_Oracle_ODBC_Conn_Str( _
     sConn = sConn & "DSN=" & sDSN & ";"
 
     If Len(sUserName) > 0 Then
-        sConn = sConn & "Uid=" & sUserName & ";Pwd=" & sPassword & ";"
+        Call AppendConnPart(sConn, "Uid", sUserName)
+        Call AppendConnPart(sConn, "Pwd", sPassword)
     End If
 
-    sConn = sConn & _
-        "DBQ=" & sDSN & ";" & _
-        "DBA=" & sDBA & ";" & _
-        "APA=" & OracleBoolSetting(bAPA) & ";" & _
-        "EXC=" & OracleBoolSetting(bEXC) & ";" & _
-        "FEN=" & OracleBoolSetting(bFEN) & ";" & _
-        "QTO=" & OracleBoolSetting(bQTO) & ";" & _
-        "FRC=" & CStr(lFRC) & ";" & _
-        "FDL=" & CStr(lFDL) & ";" & _
-        "LOB=" & OracleBoolSetting(bLOB) & ";" & _
-        "RST=" & OracleBoolSetting(bRST) & ";" & _
-        "BTD=" & OracleBoolSetting(bBTD) & ";" & _
-        "BNF=" & OracleBoolSetting(bBNF) & ";" & _
-        "BAM=" & sBAM & ";" & _
-        "NUM=" & sNUM & ";" & _
-        "DPM=" & OracleBoolSetting(bDPM) & ";" & _
-        "MTS=" & OracleBoolSetting(bMTS) & ";" & _
-        "MDI=" & OracleBoolSetting(bMDI) & ";" & _
-        "CSR=" & OracleBoolSetting(bCSR) & ";" & _
-        "FWC=" & OracleBoolSetting(bFWC) & ";" & _
-        "FBS=" & CStr(lFBS) & ";" & _
-        "TLO=" & sTLO & ";" & _
-        "MLD=" & CStr(lMLD) & ";" & _
-        "ODA=" & OracleBoolSetting(bODA) & ";" & _
-        "STE=" & OracleBoolSetting(bSTE) & ";" & _
-        "TSZ=" & CStr(lTSZ) & ";" & _
-        "AST=" & sAST & ";" & _
-        "LPS=" & CStr(lLPS) & ";"
+    Call AppendConnPart(sConn, "DBQ", sDSN)
+    Call AppendConnPart(sConn, "DBA", sDBA)
+    Call AppendConnPart(sConn, "APA", OracleBoolSetting(bAPA))
+    Call AppendConnPart(sConn, "EXC", OracleBoolSetting(bEXC))
+    Call AppendConnPart(sConn, "FEN", OracleBoolSetting(bFEN))
+    Call AppendConnPart(sConn, "QTO", OracleBoolSetting(bQTO))
+    Call AppendConnPart(sConn, "FRC", CStr(lFRC))
+    Call AppendConnPart(sConn, "FDL", CStr(lFDL))
+    Call AppendConnPart(sConn, "LOB", OracleBoolSetting(bLOB))
+    Call AppendConnPart(sConn, "RST", OracleBoolSetting(bRST))
+    Call AppendConnPart(sConn, "BTD", OracleBoolSetting(bBTD))
+    Call AppendConnPart(sConn, "BNF", OracleBoolSetting(bBNF))
+    Call AppendConnPart(sConn, "BAM", sBAM)
+    Call AppendConnPart(sConn, "NUM", sNUM)
+    Call AppendConnPart(sConn, "DPM", OracleBoolSetting(bDPM))
+    Call AppendConnPart(sConn, "MTS", OracleBoolSetting(bMTS))
+    Call AppendConnPart(sConn, "MDI", OracleBoolSetting(bMDI))
+    Call AppendConnPart(sConn, "CSR", OracleBoolSetting(bCSR))
+    Call AppendConnPart(sConn, "FWC", OracleBoolSetting(bFWC))
+    Call AppendConnPart(sConn, "FBS", CStr(lFBS))
+    Call AppendConnPart(sConn, "TLO", sTLO)
+    Call AppendConnPart(sConn, "MLD", CStr(lMLD))
+    Call AppendConnPart(sConn, "ODA", OracleBoolSetting(bODA))
+    Call AppendConnPart(sConn, "STE", OracleBoolSetting(bSTE))
+    Call AppendConnPart(sConn, "TSZ", CStr(lTSZ))
+    Call AppendConnPart(sConn, "AST", sAST)
+    Call AppendConnPart(sConn, "LPS", CStr(lLPS))
 
     Build_Oracle_ODBC_Conn_Str = sConn
 
