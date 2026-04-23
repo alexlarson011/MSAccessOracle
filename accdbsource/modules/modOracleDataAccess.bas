@@ -934,15 +934,23 @@ Public Function PTQ_GetRows( _
     Dim rows As Collection
     Dim rowDict As Object
     Dim fld As DAO.Field
+    Dim lRowCount As Long
 
     On Error GoTo HandleErr
 
     sDSN = ResolveDefaultDSN(sDSN)
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - start"
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - DSN: " & sDSN
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - SQL: " & sSQL
 
     Set rows = New Collection
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - opening isolated CurrentDb"
     Set db = OpenIsolatedCurrentDb(ws)
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - creating passthrough QueryDef"
     Set qdfTemp = CreatePassthroughQueryDef(db, sDSN, sSQL, True)
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - opening snapshot recordset"
     Set rs = qdfTemp.OpenRecordset(dbOpenSnapshot)
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - recordset opened"
 
     Do While Not rs.EOF
         Set rowDict = CreateObject("Scripting.Dictionary")
@@ -953,9 +961,16 @@ Public Function PTQ_GetRows( _
         Next fld
 
         rows.Add rowDict
+        lRowCount = lRowCount + 1
+
+        If lRowCount = 1 Or (lRowCount Mod 100) = 0 Then
+            Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - rows materialized: " & lRowCount
+        End If
+
         rs.MoveNext
     Loop
 
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - complete, rows: " & lRowCount
     Set PTQ_GetRows = rows
 
 Cleanup:
@@ -970,6 +985,7 @@ Cleanup:
     Exit Function
 
 HandleErr:
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".PTQ_GetRows - ERROR " & Err.Number & ": " & Err.Description
     Err.Raise _
         vbObjectError + 1027, _
         cModuleName & ".PTQ_GetRows", _

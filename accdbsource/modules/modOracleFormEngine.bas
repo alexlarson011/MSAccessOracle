@@ -1128,6 +1128,7 @@ Public Sub Ofm_LoadListControlBySql( _
     Dim rowData As Object
     Dim ctl As Object
     Dim columnCount As Long
+    Dim lRowCount As Long
 
     If Len(Trim$(controlName)) = 0 Then
         Err.Raise vbObjectError + 5070, cModuleName & ".Ofm_LoadListControlBySql", "Control name cannot be blank."
@@ -1137,7 +1138,10 @@ Public Sub Ofm_LoadListControlBySql( _
         Err.Raise vbObjectError + 5071, cModuleName & ".Ofm_LoadListControlBySql", "Lookup SQL cannot be blank."
     End If
 
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - start: " & controlName
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - SQL: " & sSQL
     Set rows = PTQ_GetRows(sSQL, dsn)
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - rows returned: " & rows.Count
     Set ctl = frm.Controls(controlName)
 
     If rows.Count > 0 Then
@@ -1147,14 +1151,23 @@ Public Sub Ofm_LoadListControlBySql( _
     End If
 
     Call Ofm_PrepareListControl(ctl, columnCount, boundColumn, columnWidths)
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - control prepared"
 
     If includeBlankRow Then
         ctl.AddItem Ofm_BuildBlankValueListRow(columnCount, displayColumn, blankCaption)
+        Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - blank row added"
     End If
 
     For Each rowData In rows
         ctl.AddItem Ofm_BuildValueListRow(rowData)
+        lRowCount = lRowCount + 1
+
+        If lRowCount = 1 Or (lRowCount Mod 100) = 0 Then
+            Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - items added: " & lRowCount
+        End If
     Next rowData
+
+    Debug.Print Format$(Now, "hh:nn:ss") & " " & cModuleName & ".Ofm_LoadListControlBySql - complete: " & controlName
 
 End Sub
 
