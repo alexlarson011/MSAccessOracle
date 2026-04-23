@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 <dataroot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <tblConn>
-    <ENV>PROD</ENV>
+    <ENV>MY_ENV</ENV>
     <DSN>MY_DATA_SOURCE</DSN>
     <SCHEMA></SCHEMA>
     <DSN_INIT>MY_DATA_SOURCE</DSN_INIT>
