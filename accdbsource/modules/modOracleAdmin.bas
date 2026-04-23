@@ -465,7 +465,7 @@ Public Sub OracleAdmin_SwitchEnvironment( _
     ByVal envName As String, _
     ByVal dsnName As String, _
     Optional ByVal schemaName As String = "", _
-    Optional ByVal updatePassthroughQueries As Boolean = True, _
+    Optional ByVal updatePassthroughQueries As Boolean = False, _
     Optional ByVal updateLinkedTables As Boolean = False, _
     Optional ByVal linkedTableFromSchema As String = "", _
     Optional ByVal linkedTableToSchema As String = "" _
