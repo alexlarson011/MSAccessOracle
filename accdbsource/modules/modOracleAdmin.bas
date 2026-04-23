@@ -467,6 +467,14 @@ Public Sub OracleAdmin_SwitchEnvironment( _
 
     On Error GoTo ErrHandler
 
+    Debug.Print String$(80, "-")
+    Debug.Print "OracleAdmin_SwitchEnvironment starting"
+    Debug.Print "  Requested ENV: " & envName
+    Debug.Print "  Requested DSN: " & dsnName
+    Debug.Print "  Requested SCHEMA: " & IIf(Len(Trim$(schemaName)) > 0, schemaName, "<unchanged>")
+    Debug.Print "  Update PTQs: " & CStr(updatePassthroughQueries)
+    Debug.Print "  Update linked tables: " & CStr(updateLinkedTables)
+
     envName = UCase$(Trim$(envName))
     dsnName = UCase$(Trim$(dsnName))
     schemaName = UCase$(Trim$(schemaName))
@@ -499,14 +507,23 @@ Public Sub OracleAdmin_SwitchEnvironment( _
     End If
 
     Set_DB_Env envName
+    Debug.Print "  Updated tblConn.ENV -> " & envName
+
     Set_DB_DSN dsnName
+    Debug.Print "  Updated tblConn.DSN -> " & dsnName
 
     If Len(schemaName) > 0 Then
         Set_DB_Schema schemaName
+        Debug.Print "  Updated tblConn.SCHEMA -> " & schemaName
+    Else
+        Debug.Print "  Left tblConn.SCHEMA unchanged."
     End If
 
     If updatePassthroughQueries Then
         OracleAdmin_Set_PTQ_DSNS dsnName, False
+        Debug.Print "  Updated passthrough query DSNs."
+    Else
+        Debug.Print "  Skipped passthrough query DSN updates."
     End If
 
     If updateLinkedTables Then
@@ -514,13 +531,24 @@ Public Sub OracleAdmin_SwitchEnvironment( _
             sToDSN:=dsnName, _
             sFromSchema:=linkedTableFromSchema, _
             sToSchema:=linkedTableToSchema)
+        Debug.Print "  Updated Oracle ODBC linked tables."
+        If Len(linkedTableFromSchema) > 0 Or Len(linkedTableToSchema) > 0 Then
+            Debug.Print "  Linked-table schema remap: " & linkedTableFromSchema & " -> " & linkedTableToSchema
+        End If
+    Else
+        Debug.Print "  Skipped linked-table updates."
     End If
 
     OracleSession_Clear
+    Debug.Print "  Cleared runtime Oracle session."
+    Debug.Print "OracleAdmin_SwitchEnvironment completed successfully."
+    Debug.Print String$(80, "-")
 
     Exit Sub
 
 ErrHandler:
+    Debug.Print "OracleAdmin_SwitchEnvironment failed: " & Err.Number & " - " & Err.Description
+    Debug.Print String$(80, "-")
     Err.Raise Err.Number, cModuleName & ".OracleAdmin_SwitchEnvironment", Err.Description
 
 End Sub

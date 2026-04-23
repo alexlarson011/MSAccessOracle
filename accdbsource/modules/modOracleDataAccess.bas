@@ -141,6 +141,9 @@
 ' Each passthrough helper creates a temporary in-memory QueryDef, runs the SQL,
 ' reads the result, and releases the QueryDef.
 '
+' To reduce stale ODBC-session reuse inside Access/DAO, passthrough helpers open
+' the current Access database through a fresh isolated DAO workspace per call.
+'
 '
 ' Dependencies
 ' ------------
@@ -199,6 +202,23 @@ End Function
 Private Sub AppendConnPart(ByRef sConn As String, ByVal sKey As String, ByVal sValue As String)
     sConn = sConn & sKey & "=" & sValue & ";"
 End Sub
+
+Private Function OpenIsolatedCurrentDb(ByRef ws As DAO.Workspace) As DAO.Database
+
+    Dim dbCurrent As DAO.Database
+    Dim sWorkspaceName As String
+
+    Set dbCurrent = CurrentDb
+    sWorkspaceName = "wsPTQ_" & Replace$(Format$(Timer, "0.000"), ".", "_")
+
+    Set ws = DBEngine.CreateWorkspace(sWorkspaceName, "admin", vbNullString, dbUseJet)
+    ws.IsolateODBCTrans = True
+    Set OpenIsolatedCurrentDb = ws.OpenDatabase(dbCurrent.Name)
+
+Cleanup:
+    Set dbCurrent = Nothing
+
+End Function
 
 '------------------------------------------------------------------------------------
 ' tblConn getters / setters
@@ -426,13 +446,14 @@ End Function
 
 Public Function Test_ODBC_Conn(ByVal sDSN As String) As Boolean
 
+    Dim ws As DAO.Workspace
     Dim db As DAO.Database
     Dim qdfTemp As DAO.QueryDef
     Dim rs As DAO.Recordset
 
     On Error GoTo HandleErr
 
-    Set db = CurrentDb
+    Set db = OpenIsolatedCurrentDb(ws)
     Set qdfTemp = db.CreateQueryDef(vbNullString)
 
     With qdfTemp
@@ -450,7 +471,10 @@ Cleanup:
     If Not rs Is Nothing Then rs.Close
     Set rs = Nothing
     Set qdfTemp = Nothing
+    If Not db Is Nothing Then db.Close
     Set db = Nothing
+    If Not ws Is Nothing Then ws.Close
+    Set ws = Nothing
     Exit Function
 
 HandleErr:
@@ -504,13 +528,14 @@ End Function
 
 Public Function PTQ_Select(ByVal sDSN As String, ByVal sSQL As String) As Variant
 
+    Dim ws As DAO.Workspace
     Dim db As DAO.Database
     Dim qdfTemp As DAO.QueryDef
     Dim rs As DAO.Recordset
 
     On Error GoTo HandleErr
 
-    Set db = CurrentDb
+    Set db = OpenIsolatedCurrentDb(ws)
     Set qdfTemp = CreatePassthroughQueryDef(db, sDSN, sSQL, True)
     Set rs = qdfTemp.OpenRecordset(dbOpenSnapshot)
 
@@ -525,7 +550,10 @@ Cleanup:
     If Not rs Is Nothing Then rs.Close
     Set rs = Nothing
     Set qdfTemp = Nothing
+    If Not db Is Nothing Then db.Close
     Set db = Nothing
+    If Not ws Is Nothing Then ws.Close
+    Set ws = Nothing
     Exit Function
 
 HandleErr:
@@ -609,12 +637,13 @@ Public Sub PTQ_Execute( _
     Optional ByVal timeoutSeconds As Long = 60 _
 )
 
+    Dim ws As DAO.Workspace
     Dim db As DAO.Database
     Dim qdfTemp As DAO.QueryDef
 
     On Error GoTo HandleErr
 
-    Set db = CurrentDb
+    Set db = OpenIsolatedCurrentDb(ws)
     Set qdfTemp = CreatePassthroughQueryDef(db, sDSN, sSQL, False, timeoutSeconds)
 
     qdfTemp.Execute
@@ -622,7 +651,10 @@ Public Sub PTQ_Execute( _
 Cleanup:
     On Error Resume Next
     Set qdfTemp = Nothing
+    If Not db Is Nothing Then db.Close
     Set db = Nothing
+    If Not ws Is Nothing Then ws.Close
+    Set ws = Nothing
     Exit Sub
 
 HandleErr:
@@ -666,6 +698,7 @@ Public Function PTQ_GetRows( _
     ByVal sSQL As String _
 ) As Collection
 
+    Dim ws As DAO.Workspace
     Dim db As DAO.Database
     Dim qdfTemp As DAO.QueryDef
     Dim rs As DAO.Recordset
@@ -676,7 +709,7 @@ Public Function PTQ_GetRows( _
     On Error GoTo HandleErr
 
     Set rows = New Collection
-    Set db = CurrentDb
+    Set db = OpenIsolatedCurrentDb(ws)
     Set qdfTemp = CreatePassthroughQueryDef(db, sDSN, sSQL, True)
     Set rs = qdfTemp.OpenRecordset(dbOpenSnapshot)
 
@@ -699,7 +732,10 @@ Cleanup:
     If Not rs Is Nothing Then rs.Close
     Set rs = Nothing
     Set qdfTemp = Nothing
+    If Not db Is Nothing Then db.Close
     Set db = Nothing
+    If Not ws Is Nothing Then ws.Close
+    Set ws = Nothing
     Exit Function
 
 HandleErr:

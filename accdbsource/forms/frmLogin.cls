@@ -280,10 +280,12 @@ End Sub
 Private Sub btnLogin_Click()
 
     Dim conn As Object
+    Dim rs As Object
     Dim adoLoginConnectionString As String
     Dim runtimeConnectionString As String
     Dim oraclePassExpired As Boolean
     Dim validatedOracleUser As String
+    Dim ptqValidatedUser As String
 
     On Error GoTo ErrHandler
 
@@ -332,25 +334,35 @@ Private Sub btnLogin_Click()
         MsgBox "Your " & Get_DB_DSN() & " password is expired. Please complete the Oracle password change dialog when prompted.", vbExclamation
     End If
 
-    ' Store runtime session connection string
-    g_OracleConnectionString = runtimeConnectionString
+    Set rs = conn.Execute("SELECT USER FROM DUAL")
 
-    ' Validate that passthrough access now works with the runtime connection
-    validatedOracleUser = UCase$(PTQ_SelectString(Get_DB_DSN(), "SELECT USER FROM DUAL"))
+    If rs.EOF Then
+        Err.Raise vbObjectError + 7100, "frmLogin.btnLogin_Click", _
+                  "Login succeeded, but Oracle did not return the authenticated user."
+    End If
+
+    validatedOracleUser = UCase$(Nz(rs.Fields(0).Value, vbNullString))
 
     If Len(validatedOracleUser) = 0 Then
-        Err.Raise vbObjectError + 7100, "frmLogin.btnLogin_Click", _
+        Err.Raise vbObjectError + 7101, "frmLogin.btnLogin_Click", _
                   "Login succeeded, but the runtime Oracle session could not be validated."
     End If
 
+    Call OracleSession_Clear
+    g_OracleConnectionString = runtimeConnectionString
     g_OracleSessionUser = validatedOracleUser
 
-    If oraclePassExpired Then
-        validatedOracleUser = UCase$(PTQ_SelectString(Get_DB_DSN(), "SELECT USER FROM DUAL"))
-        If Len(validatedOracleUser) = 0 Then
-            Err.Raise vbObjectError + 7101, "frmLogin.btnLogin_Click", _
-                      "Expired password reset did not complete successfully. Please try logging in again."
-        End If
+    ptqValidatedUser = UCase$(PTQ_SelectString(Get_DB_DSN(), "SELECT USER FROM DUAL"))
+
+    If Len(ptqValidatedUser) = 0 Then
+        Err.Raise vbObjectError + 7102, "frmLogin.btnLogin_Click", _
+                  "Passthrough validation returned a blank Oracle user."
+    End If
+
+    If StrComp(ptqValidatedUser, validatedOracleUser, vbTextCompare) <> 0 Then
+        Err.Raise vbObjectError + 7103, "frmLogin.btnLogin_Click", _
+                  "Passthrough validation returned Oracle user '" & ptqValidatedUser & _
+                  "' after authenticating as '" & validatedOracleUser & "'."
     End If
 
     DoCmd.Close acForm, Me.Name, acSaveNo
@@ -365,6 +377,10 @@ Private Sub btnLogin_Click()
 
 Cleanup:
     On Error Resume Next
+    If Not rs Is Nothing Then
+        If rs.State <> 0 Then rs.Close
+    End If
+    Set rs = Nothing
     If Not conn Is Nothing Then
         If conn.State <> 0 Then conn.Close
     End If
