@@ -10,7 +10,9 @@
   </xsd:element>
   <xsd:element name="tblConn">
     <xsd:annotation>
-      <xsd:appinfo></xsd:appinfo>
+      <xsd:appinfo>
+        <od:tableProperty name="Orientation" type="2" value="0"></od:tableProperty>
+      </xsd:appinfo>
     </xsd:annotation>
     <xsd:complexType>
       <xsd:sequence>

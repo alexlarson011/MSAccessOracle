@@ -1,4 +1,4 @@
-Version =20
+﻿Version =20
 VersionRequired =20
 Begin Form
     AllowFilters = NotDefault
@@ -23,10 +23,10 @@ Begin Form
     Width =5580
     DatasheetFontHeight =11
     ItemSuffix =12
-    Left =-23988
-    Top =3012
-    Right =-6768
-    Bottom =15984
+    Left =2150
+    Top =3020
+    Right =18940
+    Bottom =10690
     RecSrcDt = Begin
         0x9d7a7cfb941fe640
     End
@@ -121,7 +121,7 @@ Begin Form
                     Locked = NotDefault
                     TabStop = NotDefault
                     OldBorderStyle =0
-                    OverlapFlags =87
+                    OverlapFlags =93
                     BackStyle =0
                     IMESentenceMode =3
                     Left =240
@@ -130,6 +130,7 @@ Begin Form
                     Height =360
                     FontSize =12
                     FontWeight =700
+                    TabIndex =2
                     Name ="txtAppName"
                     ControlSource ="appDisplayName"
 
@@ -150,13 +151,14 @@ Begin Form
                     Locked = NotDefault
                     TabStop = NotDefault
                     OldBorderStyle =0
-                    OverlapFlags =93
+                    OverlapFlags =87
                     BackStyle =0
                     IMESentenceMode =3
                     Left =240
                     Top =540
                     Width =4860
                     Height =600
+                    TabIndex =1
                     Name ="txtHeader"
                     ControlSource ="headerText"
 
@@ -175,15 +177,15 @@ Begin Form
                 Begin TextBox
                     OverlapFlags =85
                     IMESentenceMode =3
-                    Left =1860
+                    Left =2160
                     Top =1320
-                    Width =2460
+                    Width =3120
                     Height =300
                     Name ="txtUserName"
 
-                    LayoutCachedLeft =1860
+                    LayoutCachedLeft =2160
                     LayoutCachedTop =1320
-                    LayoutCachedWidth =4320
+                    LayoutCachedWidth =5280
                     LayoutCachedHeight =1620
                     BackThemeColorIndex =1
                     BorderThemeColorIndex =1
@@ -194,13 +196,13 @@ Begin Form
                             OverlapFlags =85
                             Left =240
                             Top =1320
-                            Width =1530
+                            Width =1860
                             Height =300
                             Name ="lblUserName"
                             Caption ="User ID"
                             LayoutCachedLeft =240
                             LayoutCachedTop =1320
-                            LayoutCachedWidth =1770
+                            LayoutCachedWidth =2100
                             LayoutCachedHeight =1620
                         End
                     End
@@ -208,17 +210,17 @@ Begin Form
                 Begin TextBox
                     OverlapFlags =85
                     IMESentenceMode =3
-                    Left =1860
+                    Left =2160
                     Top =1680
-                    Width =2460
+                    Width =3120
                     Height =300
-                    TabIndex =1
+                    TabIndex =3
                     Name ="txtOldPassword"
                     InputMask ="Password"
 
-                    LayoutCachedLeft =1860
+                    LayoutCachedLeft =2160
                     LayoutCachedTop =1680
-                    LayoutCachedWidth =4320
+                    LayoutCachedWidth =5280
                     LayoutCachedHeight =1980
                     BackThemeColorIndex =1
                     BorderThemeColorIndex =1
@@ -229,13 +231,13 @@ Begin Form
                             OverlapFlags =85
                             Left =240
                             Top =1680
-                            Width =1530
+                            Width =1860
                             Height =300
                             Name ="lblOldPassword"
                             Caption ="Current Password"
                             LayoutCachedLeft =240
                             LayoutCachedTop =1680
-                            LayoutCachedWidth =1770
+                            LayoutCachedWidth =2100
                             LayoutCachedHeight =1980
                         End
                     End
@@ -243,17 +245,17 @@ Begin Form
                 Begin TextBox
                     OverlapFlags =85
                     IMESentenceMode =3
-                    Left =1860
+                    Left =2160
                     Top =2040
-                    Width =2460
+                    Width =3120
                     Height =300
-                    TabIndex =2
+                    TabIndex =4
                     Name ="txtNewPassword"
                     InputMask ="Password"
 
-                    LayoutCachedLeft =1860
+                    LayoutCachedLeft =2160
                     LayoutCachedTop =2040
-                    LayoutCachedWidth =4320
+                    LayoutCachedWidth =5280
                     LayoutCachedHeight =2340
                     BackThemeColorIndex =1
                     BorderThemeColorIndex =1
@@ -264,13 +266,13 @@ Begin Form
                             OverlapFlags =85
                             Left =240
                             Top =2040
-                            Width =1530
+                            Width =1860
                             Height =300
                             Name ="lblNewPassword"
                             Caption ="New Password"
                             LayoutCachedLeft =240
                             LayoutCachedTop =2040
-                            LayoutCachedWidth =1770
+                            LayoutCachedWidth =2100
                             LayoutCachedHeight =2340
                         End
                     End
@@ -278,17 +280,17 @@ Begin Form
                 Begin TextBox
                     OverlapFlags =85
                     IMESentenceMode =3
-                    Left =1860
+                    Left =2160
                     Top =2400
-                    Width =2460
+                    Width =3120
                     Height =300
-                    TabIndex =3
+                    TabIndex =5
                     Name ="txtConfirmPassword"
                     InputMask ="Password"
 
-                    LayoutCachedLeft =1860
+                    LayoutCachedLeft =2160
                     LayoutCachedTop =2400
-                    LayoutCachedWidth =4320
+                    LayoutCachedWidth =5280
                     LayoutCachedHeight =2700
                     BackThemeColorIndex =1
                     BorderThemeColorIndex =1
@@ -299,19 +301,19 @@ Begin Form
                             OverlapFlags =85
                             Left =240
                             Top =2400
-                            Width =1530
+                            Width =1860
                             Height =300
                             Name ="lblConfirmPassword"
                             Caption ="Confirm Password"
                             LayoutCachedLeft =240
                             LayoutCachedTop =2400
-                            LayoutCachedWidth =1770
+                            LayoutCachedWidth =2100
                             LayoutCachedHeight =2700
                         End
                     End
                 End
                 Begin Label
-                    OverlapFlags =87
+                    OverlapFlags =85
                     Left =240
                     Top =2820
                     Width =3300
@@ -327,18 +329,18 @@ Begin Form
                 Begin CommandButton
                     Default = NotDefault
                     OverlapFlags =85
-                    Left =2820
+                    Left =3300
                     Top =3300
                     Width =1980
                     Height =300
-                    TabIndex =4
+                    TabIndex =6
                     Name ="btnUpdatePassword"
                     Caption ="Update Password"
                     OnClick ="[Event Procedure]"
 
-                    LayoutCachedLeft =2820
+                    LayoutCachedLeft =3300
                     LayoutCachedTop =3300
-                    LayoutCachedWidth =4800
+                    LayoutCachedWidth =5280
                     LayoutCachedHeight =3600
                     Overlaps =1
                 End
@@ -348,7 +350,7 @@ Begin Form
                     Top =3660
                     Width =1200
                     Height =300
-                    TabIndex =5
+                    TabIndex =7
                     Name ="btnCancel"
                     Caption ="Cancel"
                     OnClick ="[Event Procedure]"

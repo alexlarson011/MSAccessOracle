@@ -28,6 +28,10 @@
       "Value": "",
       "Type": 12
     },
+    "Default Zoom Level": {
+      "Value": 100,
+      "Type": 4
+    },
     "DesignMasterID": {
       "Value": "",
       "Type": 15

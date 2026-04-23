@@ -409,7 +409,7 @@ Public Function OracleAdmin_ChangeCurrentUserPassword( _
                   "Unable to validate the Oracle user for the current password."
     End If
 
-    sValidatedOracleUser = UCase$(Nz(rs.Fields(0).Value, vbNullString))
+    sValidatedOracleUser = UCase$(Nz(rs.fields(0).Value, vbNullString))
 
     If Len(sValidatedOracleUser) = 0 Then
         Err.Raise vbObjectError + 2026, cModuleName & ".OracleAdmin_ChangeCurrentUserPassword", _

@@ -276,7 +276,7 @@ Public Sub Set_DB_Schema(ByVal sToSchema As String)
 
 End Sub
 
-Private Function Get_tblConn_Value(ByVal fieldName As String, ByVal defaultValue As String) As String
+Private Function Get_tblConn_Value(ByVal fieldName As String, ByVal DefaultValue As String) As String
 
     Dim v As Variant
 
@@ -285,7 +285,7 @@ Private Function Get_tblConn_Value(ByVal fieldName As String, ByVal defaultValue
     v = DLookup(fieldName, "tblConn")
 
     If IsNull(v) Then
-        Get_tblConn_Value = defaultValue
+        Get_tblConn_Value = DefaultValue
     Else
         Get_tblConn_Value = CStr(v)
     End If
@@ -293,7 +293,7 @@ Private Function Get_tblConn_Value(ByVal fieldName As String, ByVal defaultValue
     Exit Function
 
 HandleErr:
-    Get_tblConn_Value = defaultValue
+    Get_tblConn_Value = DefaultValue
 
 End Function
 

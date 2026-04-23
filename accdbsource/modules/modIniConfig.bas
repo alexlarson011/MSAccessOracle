@@ -533,7 +533,7 @@ Public Sub CleanIniFile(Optional ByVal filePath As String = "")
             hasKeys = SectionCollectionHasKeys(sectionLines)
 
             If currentSection = vbNullString Or hasKeys Then
-                If Not sectionDict.exists(currentSection) Then
+                If Not sectionDict.Exists(currentSection) Then
                     sectionDict.Add currentSection, sectionLines
                     sectionOrder.Add currentSection
                 Else
@@ -554,7 +554,7 @@ Public Sub CleanIniFile(Optional ByVal filePath As String = "")
 
     hasKeys = SectionCollectionHasKeys(sectionLines)
     If currentSection = vbNullString Or hasKeys Then
-        If Not sectionDict.exists(currentSection) Then
+        If Not sectionDict.Exists(currentSection) Then
             sectionDict.Add currentSection, sectionLines
             sectionOrder.Add currentSection
         Else
