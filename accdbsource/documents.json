@@ -1,0 +1,15 @@
+﻿{
+  "Info": {
+    "Class": "clsDbDocument",
+    "Description": "Database Documents Properties (DAO)"
+  },
+  "Items": {
+    "Databases": {
+      "SummaryInfo": {
+        "Author": "Alex Larson",
+        "Company": "State of MN",
+        "Title": "Stateless_Shell"
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+﻿CREATE TABLE [tblConn] (
+  [ENV] VARCHAR (15),
+  [DSN] VARCHAR (15),
+  [SCHEMA] VARCHAR (30),
+  [DSN_INIT] VARCHAR (15)
+)

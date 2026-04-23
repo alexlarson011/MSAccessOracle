@@ -1,0 +1,185 @@
+﻿{
+  "Info": {
+    "Class": "clsVCSIndex",
+    "Description": "Version Control System Index"
+  },
+  "Items": {
+    "MergeBuildDate": null,
+    "FullBuildDate": null,
+    "ExportDate": "2026-04-23T14:08:25.000Z",
+    "FullExportDate": "2026-04-23T14:08:25.000Z",
+    "OptionsHash": "cffaf8b",
+    "LastMergedCommit": "",
+    "Components": {
+      "DB Connections": {
+        "db-connection.json": {
+          "FileHash": "6ab39b8",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "10e63e5"
+        }
+      },
+      "DB Properties": {
+        "dbs-properties.json": {
+          "FileHash": "bb7ad19",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "7376eb1"
+        }
+      },
+      "Doc Properties": {
+        "documents.json": {
+          "FileHash": "01a79fe",
+          "ExportDate": "2026-04-23T14:08:24.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "4834eb4"
+        }
+      },
+      "Forms": {
+        "frmLogin.bas": {
+          "FileHash": "57ff620",
+          "OtherHash": "22ebd13",
+          "ExportDate": "2026-04-23T14:08:23.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "bbf3577"
+        }
+      },
+      "Hidden Attributes": {
+        "hidden-attributes.json": {
+        }
+      },
+      "Modules": {
+        "clsOracleFormField.cls": {
+          "FileHash": "bc44cc1",
+          "OtherHash": "1d4ef6f",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "d365bbf"
+        },
+        "modIniConfig.bas": {
+          "FileHash": "bb2ed03",
+          "OtherHash": "8ca9485",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "2d1ae29"
+        },
+        "modOracleAdmin.bas": {
+          "FileHash": "012202d",
+          "OtherHash": "caba93f",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "b6a9c9a"
+        },
+        "modOracleDataAccess.bas": {
+          "FileHash": "163bc7e",
+          "OtherHash": "5857113",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "76f8260"
+        },
+        "modOracleFormEngine.bas": {
+          "FileHash": "aa314f8",
+          "OtherHash": "e0f486f",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "261990a"
+        },
+        "modOracleLinking.bas": {
+          "FileHash": "189b745",
+          "OtherHash": "1f6724a",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "d5d1603"
+        },
+        "modOracleSession.bas": {
+          "FileHash": "2718d57",
+          "OtherHash": "462e27f",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "5cfeac6"
+        }
+      },
+      "Nav Pane Groups": {
+        "nav-pane-groups.json": {
+          "FileHash": "8b001dd",
+          "ExportDate": "2026-04-23T14:08:24.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "1965665"
+        }
+      },
+      "Proj Properties": {
+        "proj-properties.json": {
+          "FileHash": "2c9471b",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "3aacfce"
+        }
+      },
+      "Project": {
+        "project.json": {
+          "FileHash": "9fe41ad",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "e940835"
+        }
+      },
+      "Queries": {
+        "ptqTest.bas": {
+          "FileHash": "42ea873",
+          "ExportDate": "2026-04-23T14:08:23.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "e3e0f4c"
+        }
+      },
+      "Shared Images": {
+        "mnDOTlogo_Cropped-100x50.json": {
+          "FileHash": "b8a72a5",
+          "OtherHash": "d3ef2fd",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "3775ae1"
+        },
+        "question25px.json": {
+          "FileHash": "ea06930",
+          "OtherHash": "8ab1041",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "43d9b14"
+        }
+      },
+      "Tables": {
+        "tblConn.xml": {
+          "FileHash": "ca9313b",
+          "ExportDate": "2026-04-23T14:08:23.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "e7dfda2"
+        }
+      },
+      "Themes": {
+        "Retrospect.thmx": {
+          "FileHash": "bddb867",
+          "OtherHash": "a6eb447",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "0cb5e92"
+        }
+      },
+      "VB Project": {
+        "vbe-project.json": {
+          "FileHash": "d6bcc94",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "84d78a9"
+        }
+      },
+      "VBE References": {
+        "vbe-references.json": {
+          "FileHash": "c8d14f7",
+          "ExportDate": "2026-04-23T14:08:22.000Z",
+          "SourceModified": null,
+          "FilePropertiesHash": "e7c9bd8"
+        }
+      }
+    }
+  }
+}

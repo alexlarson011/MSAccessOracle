@@ -1,0 +1,9 @@
+﻿<?xml version="1.0"?>
+<dataroot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <tblConn>
+    <ENV>PROD</ENV>
+    <DSN>WHSP</DSN>
+    <SCHEMA></SCHEMA>
+    <DSN_INIT>WHSP</DSN_INIT>
+  </tblConn>
+</dataroot>

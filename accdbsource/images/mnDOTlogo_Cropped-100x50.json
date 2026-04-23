@@ -1,0 +1,12 @@
+﻿{
+  "Info": {
+    "Class": "clsDbSharedImage",
+    "Description": "Shared Image Gallery Item"
+  },
+  "Items": {
+    "Name": "mnDOTlogo_Cropped-100x50",
+    "FileName": "mnDOTlogo_Cropped-100x50.png",
+    "Extension": "png",
+    "ContentHash": "83a7714"
+  }
+}
