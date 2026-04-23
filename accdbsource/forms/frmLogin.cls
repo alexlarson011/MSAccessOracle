@@ -25,7 +25,8 @@ Attribute VB_Exposed = False
 '     - prompting the user for Oracle credentials
 '     - validating credentials using ADODB
 '     - classifying common Oracle / ODBC login failures for the user
-'     - displaying login status and failure reasons in the form UI
+'     - displaying user-facing login failures through message-box popups
+'     - using the form header only for lightweight login status messaging
 '     - storing the validated runtime Oracle connection string in modOracleSession
 '     - validating that Oracle passthrough access works after login
 '     - opening the Oracle password change form when requested
@@ -65,7 +66,8 @@ Attribute VB_Exposed = False
 '
 '     - predictable login UX
 '     - clearer error handling
-'     - inline login status messaging inside the form
+'     - popup Oracle / ODBC failure details at login time
+'     - lightweight in-form status messaging where helpful
 '     - runtime credential injection for passthrough SQL
 '     - a driver-prompt fallback for expired Oracle passwords
 '     - optional DSN override behavior for per-machine custom configuration
@@ -386,7 +388,7 @@ Private Sub btnLogin_Click()
     g_OracleConnectionString = runtimeConnectionString
     g_OracleSessionUser = validatedOracleUser
 
-    ptqValidatedUser = UCase$(PTQ_SelectString(Get_DB_DSN(), "SELECT USER FROM DUAL"))
+    ptqValidatedUser = UCase$(PTQ_SelectString("SELECT USER FROM DUAL", Get_DB_DSN()))
 
     If Len(ptqValidatedUser) = 0 Then
         Err.Raise vbObjectError + 7102, "frmLogin.btnLogin_Click", _

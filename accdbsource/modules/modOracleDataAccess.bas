@@ -89,15 +89,15 @@
 ' -------------
 ' Scalar query:
 '
-'     v = PTQ_Select(Get_DB_DSN(), "SELECT COUNT(*) FROM my_table")
+'     v = PTQ_Select("SELECT COUNT(*) FROM my_table")
 '
 ' Typed scalar query:
 '
-'     nextId = PTQ_SelectLong(Get_DB_DSN(), "SELECT my_seq.NEXTVAL FROM dual")
+'     nextId = PTQ_SelectLong("SELECT my_seq.NEXTVAL FROM dual")
 '
 ' Action SQL:
 '
-'     PTQ_Execute Get_DB_DSN(), "UPDATE my_table SET col = 'X' WHERE id = 1"
+'     PTQ_Execute "UPDATE my_table SET col = 'X' WHERE id = 1"
 '
 ' Full connection-string build:
 '
@@ -110,14 +110,17 @@
 '
 ' Single-row retrieval:
 '
-'     Set rowData = PTQ_GetRow(Get_DB_DSN(), "SELECT col1, col2 FROM my_table WHERE id = 1")
+'     Set rowData = PTQ_GetRow("SELECT col1, col2 FROM my_table WHERE id = 1")
 '
 ' Returned row dictionaries use case-insensitive key lookup, which makes them
 ' friendlier for aliased SQL and form-engine read models.
 '
 ' Sequence helper:
 '
-'     nextId = Oracle_GetNextSequenceValue(Get_DB_DSN(), Get_DB_Schema(), "my_seq")
+'     nextId = Oracle_GetNextSequenceValue(Get_DB_Schema(), "my_seq")
+'
+' Most query helpers place SQL or the primary inputs first and accept DSN as an
+' optional final argument. If omitted, DSN defaults to Get_DB_DSN().
 '
 '
 ' Runtime connection behavior
@@ -242,6 +245,18 @@ Private Function Get_Runtime_ADO_Conn_Str(Optional ByVal sDSN As String = "") As
     End If
 
     Get_Runtime_ADO_Conn_Str = sConn
+
+End Function
+
+Private Function ResolveDefaultDSN(Optional ByVal sDSN As String = "") As String
+
+    sDSN = Trim$(sDSN)
+
+    If Len(sDSN) = 0 Then
+        sDSN = Get_DB_DSN()
+    End If
+
+    ResolveDefaultDSN = sDSN
 
 End Function
 
@@ -600,7 +615,7 @@ Public Function Get_ADO_Login_Conn_Str( _
 
 End Function
 
-Public Function Test_ODBC_Conn(ByVal sDSN As String) As Boolean
+Public Function Test_ODBC_Conn(Optional ByVal sDSN As String = "") As Boolean
 
     Dim ws As DAO.Workspace
     Dim db As DAO.Database
@@ -608,6 +623,8 @@ Public Function Test_ODBC_Conn(ByVal sDSN As String) As Boolean
     Dim rs As DAO.Recordset
 
     On Error GoTo HandleErr
+
+    sDSN = ResolveDefaultDSN(sDSN)
 
     Set db = OpenIsolatedCurrentDb(ws)
     Set qdfTemp = db.CreateQueryDef(vbNullString)
@@ -682,7 +699,7 @@ End Function
 ' Passthrough scalar helpers
 '------------------------------------------------------------------------------------
 
-Public Function PTQ_Select(ByVal sDSN As String, ByVal sSQL As String) As Variant
+Public Function PTQ_Select(ByVal sSQL As String, Optional ByVal sDSN As String = "") As Variant
 
     Dim ws As DAO.Workspace
     Dim db As DAO.Database
@@ -690,6 +707,8 @@ Public Function PTQ_Select(ByVal sDSN As String, ByVal sSQL As String) As Varian
     Dim rs As DAO.Recordset
 
     On Error GoTo HandleErr
+
+    sDSN = ResolveDefaultDSN(sDSN)
 
     If OracleSession_IsConnected() Then
         PTQ_Select = PTQ_SelectAdo(sDSN, sSQL)
@@ -728,11 +747,11 @@ HandleErr:
 
 End Function
 
-Public Function PTQ_SelectString(ByVal sDSN As String, ByVal sSQL As String) As String
+Public Function PTQ_SelectString(ByVal sSQL As String, Optional ByVal sDSN As String = "") As String
 
     Dim v As Variant
 
-    v = PTQ_Select(sDSN, sSQL)
+    v = PTQ_Select(sSQL, sDSN)
 
     If IsNull(v) Then
         PTQ_SelectString = vbNullString
@@ -742,11 +761,11 @@ Public Function PTQ_SelectString(ByVal sDSN As String, ByVal sSQL As String) As 
 
 End Function
 
-Public Function PTQ_SelectLong(ByVal sDSN As String, ByVal sSQL As String) As Long
+Public Function PTQ_SelectLong(ByVal sSQL As String, Optional ByVal sDSN As String = "") As Long
 
     Dim v As Variant
 
-    v = PTQ_Select(sDSN, sSQL)
+    v = PTQ_Select(sSQL, sDSN)
 
     If IsNull(v) Then
         Err.Raise vbObjectError + 1023, cModuleName & ".PTQ_SelectLong", "Scalar query returned Null."
@@ -756,11 +775,11 @@ Public Function PTQ_SelectLong(ByVal sDSN As String, ByVal sSQL As String) As Lo
 
 End Function
 
-Public Function PTQ_SelectDouble(ByVal sDSN As String, ByVal sSQL As String) As Double
+Public Function PTQ_SelectDouble(ByVal sSQL As String, Optional ByVal sDSN As String = "") As Double
 
     Dim v As Variant
 
-    v = PTQ_Select(sDSN, sSQL)
+    v = PTQ_Select(sSQL, sDSN)
 
     If IsNull(v) Then
         Err.Raise vbObjectError + 1024, cModuleName & ".PTQ_SelectDouble", "Scalar query returned Null."
@@ -770,11 +789,11 @@ Public Function PTQ_SelectDouble(ByVal sDSN As String, ByVal sSQL As String) As 
 
 End Function
 
-Public Function PTQ_SelectDate(ByVal sDSN As String, ByVal sSQL As String) As Date
+Public Function PTQ_SelectDate(ByVal sSQL As String, Optional ByVal sDSN As String = "") As Date
 
     Dim v As Variant
 
-    v = PTQ_Select(sDSN, sSQL)
+    v = PTQ_Select(sSQL, sDSN)
 
     If IsNull(v) Then
         Err.Raise vbObjectError + 1025, cModuleName & ".PTQ_SelectDate", "Scalar query returned Null."
@@ -784,8 +803,8 @@ Public Function PTQ_SelectDate(ByVal sDSN As String, ByVal sSQL As String) As Da
 
 End Function
 
-Public Function PTQ_Exists(ByVal sDSN As String, ByVal sSQL As String) As Boolean
-    PTQ_Exists = Not IsNull(PTQ_Select(sDSN, sSQL))
+Public Function PTQ_Exists(ByVal sSQL As String, Optional ByVal sDSN As String = "") As Boolean
+    PTQ_Exists = Not IsNull(PTQ_Select(sSQL, sDSN))
 End Function
 
 '------------------------------------------------------------------------------------
@@ -793,9 +812,9 @@ End Function
 '------------------------------------------------------------------------------------
 
 Public Sub PTQ_Execute( _
-    ByVal sDSN As String, _
     ByVal sSQL As String, _
-    Optional ByVal timeoutSeconds As Long = 60 _
+    Optional ByVal timeoutSeconds As Long = 60, _
+    Optional ByVal sDSN As String = "" _
 )
 
     Dim ws As DAO.Workspace
@@ -803,6 +822,8 @@ Public Sub PTQ_Execute( _
     Dim qdfTemp As DAO.QueryDef
 
     On Error GoTo HandleErr
+
+    sDSN = ResolveDefaultDSN(sDSN)
 
     If OracleSession_IsConnected() Then
         PTQ_ExecuteAdo sDSN, sSQL, timeoutSeconds
@@ -835,9 +856,9 @@ HandleErr:
 End Sub
 
 Public Sub PTQ_Run_Proc( _
-    ByVal sDSN As String, _
     ByVal sOracleProcName As String, _
-    Optional ByVal commitAfter As Boolean = True _
+    Optional ByVal commitAfter As Boolean = True, _
+    Optional ByVal sDSN As String = "" _
 )
 
     Dim sSQL As String
@@ -851,7 +872,7 @@ Public Sub PTQ_Run_Proc( _
 
     sSQL = sSQL & "END;"
 
-    PTQ_Execute sDSN, sSQL
+    PTQ_Execute sSQL, , sDSN
 
 End Sub
 
@@ -860,8 +881,8 @@ End Sub
 '------------------------------------------------------------------------------------
 
 Public Function PTQ_GetRows( _
-    ByVal sDSN As String, _
-    ByVal sSQL As String _
+    ByVal sSQL As String, _
+    Optional ByVal sDSN As String = "" _
 ) As Collection
 
     Dim ws As DAO.Workspace
@@ -873,6 +894,8 @@ Public Function PTQ_GetRows( _
     Dim fld As DAO.Field
 
     On Error GoTo HandleErr
+
+    sDSN = ResolveDefaultDSN(sDSN)
 
     If OracleSession_IsConnected() Then
         Set PTQ_GetRows = PTQ_GetRowsAdo(sDSN, sSQL)
@@ -921,13 +944,13 @@ HandleErr:
 End Function
 
 Public Function PTQ_GetRow( _
-    ByVal sDSN As String, _
-    ByVal sSQL As String _
+    ByVal sSQL As String, _
+    Optional ByVal sDSN As String = "" _
 ) As Object
 
     Dim rows As Collection
 
-    Set rows = PTQ_GetRows(sDSN, sSQL)
+    Set rows = PTQ_GetRows(sSQL, sDSN)
 
     If rows.Count = 0 Then
         Set PTQ_GetRow = Nothing
@@ -937,7 +960,7 @@ Public Function PTQ_GetRow( _
 
 End Function
 
-Public Function PTQ_Rs(ByVal sDSN As String, ByVal sSQL As String) As DAO.Recordset
+Public Function PTQ_Rs(ByVal sSQL As String, Optional ByVal sDSN As String = "") As DAO.Recordset
     Err.Raise _
         vbObjectError + 1028, _
         cModuleName & ".PTQ_Rs", _
@@ -953,7 +976,7 @@ Public Function Get_ODBC_User() As String
     If Len(g_OracleSessionUser) > 0 Then
         Get_ODBC_User = g_OracleSessionUser
     Else
-        Get_ODBC_User = UCase$(PTQ_SelectString(Get_DB_DSN(), "SELECT USER FROM DUAL"))
+        Get_ODBC_User = UCase$(PTQ_SelectString("SELECT USER FROM DUAL"))
     End If
 
 End Function
@@ -966,14 +989,14 @@ Public Function Check_Oracle_User_Role(ByVal sOracleRoleName As String) As Boole
            "FROM user_role_privs " & _
            "WHERE granted_role = '" & SqlTextLiteral(UCase$(Trim$(sOracleRoleName))) & "'"
 
-    Check_Oracle_User_Role = (PTQ_SelectLong(Get_DB_DSN(), sSQL) > 0)
+    Check_Oracle_User_Role = (PTQ_SelectLong(sSQL) > 0)
 
 End Function
 
 Public Function Oracle_GetNextSequenceValue( _
-    ByVal sDSN As String, _
     ByVal sSchema As String, _
-    ByVal sSequenceName As String _
+    ByVal sSequenceName As String, _
+    Optional ByVal sDSN As String = "" _
 ) As Long
 
     Dim sObjectName As String
@@ -981,6 +1004,7 @@ Public Function Oracle_GetNextSequenceValue( _
 
     sSequenceName = Trim$(sSequenceName)
     sSchema = Trim$(sSchema)
+    sDSN = ResolveDefaultDSN(sDSN)
 
     If Len(sSequenceName) = 0 Then
         Err.Raise vbObjectError + 1030, cModuleName & ".Oracle_GetNextSequenceValue", "Sequence name cannot be blank."
@@ -994,7 +1018,7 @@ Public Function Oracle_GetNextSequenceValue( _
 
     sSQL = "SELECT " & sObjectName & ".NEXTVAL FROM DUAL"
 
-    Oracle_GetNextSequenceValue = PTQ_SelectLong(sDSN, sSQL)
+    Oracle_GetNextSequenceValue = PTQ_SelectLong(sSQL, sDSN)
 
 End Function
 

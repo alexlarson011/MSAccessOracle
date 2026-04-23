@@ -16,8 +16,8 @@ Attribute VB_Exposed = False
 ' Provides a small Oracle password-change form for the Access application.
 '
 ' This form supports a user-driven password update workflow using the current Oracle
-' credentials and a new target password, then optionally pushes the new password back
-' into frmLogin if that form is open.
+' credentials and a new target password, then returns the user to the login flow to
+' enter the new password manually if needed.
 '
 '
 ' Responsibilities

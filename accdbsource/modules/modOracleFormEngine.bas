@@ -105,11 +105,11 @@
 '
 ' Load an existing record:
 '
-'     Ofm_LoadForm Me, Get_DB_DSN(), Get_DB_Schema(), cTableName, cKeyField, keyValue, mFields, mOriginalValues
+'     Ofm_LoadForm Me, Get_DB_Schema(), cTableName, cKeyField, keyValue, mFields, mOriginalValues
 '
 ' Load an existing record from arbitrary SQL:
 '
-'     Ofm_LoadFormBySql Me, Get_DB_DSN(), _
+'     Ofm_LoadFormBySql Me, _
 '         "SELECT p.PROJ_ID, s.STATUS_TEXT " & _
 '         "FROM PROJECT p " & _
 '         "LEFT JOIN STATUS_LU s ON s.STATUS_CD = p.STATUS_CD " & _
@@ -122,11 +122,11 @@
 '
 ' Save:
 '
-'     savedKey = Ofm_SaveRecord(Me, Get_DB_DSN(), Get_DB_Schema(), cTableName, cKeyField, mFields, mOriginalValues, mIsNewRecord, cSequenceName, True)
+'     savedKey = Ofm_SaveRecord(Me, Get_DB_Schema(), cTableName, cKeyField, mFields, mOriginalValues, mIsNewRecord, cSequenceName, True)
 '
 ' Save and reload from a read-model SQL statement:
 '
-'     savedKey = Ofm_SaveRecord(Me, Get_DB_DSN(), Get_DB_Schema(), cTableName, cKeyField, mFields, mOriginalValues, mIsNewRecord, cSequenceName, True, _
+'     savedKey = Ofm_SaveRecord(Me, Get_DB_Schema(), cTableName, cKeyField, mFields, mOriginalValues, mIsNewRecord, cSequenceName, True, _
 '         "SELECT p.PROJ_ID, s.STATUS_TEXT " & _
 '         "FROM PROJECT p " & _
 '         "LEFT JOIN STATUS_LU s ON s.STATUS_CD = p.STATUS_CD " & _
@@ -134,7 +134,10 @@
 '
 ' Delete:
 '
-'     Ofm_Delete Get_DB_DSN(), Get_DB_Schema(), cTableName, cKeyField, Me!PROJ_OPTN_ID
+'     Ofm_Delete Get_DB_Schema(), cTableName, cKeyField, Me!PROJ_OPTN_ID
+'
+' The CRUD/load helpers place the main form and business inputs first and accept
+' DSN as an optional final argument. If omitted, DSN defaults to Get_DB_DSN().
 '
 '
 ' Sequence-first insert model
@@ -584,30 +587,30 @@ End Sub
 
 Public Sub Ofm_LoadForm( _
     ByRef frm As Access.Form, _
-    ByVal dsn As String, _
     ByVal schemaName As String, _
     ByVal tableName As String, _
     ByVal keyField As String, _
     ByVal keyValue As Variant, _
     ByRef fields As Collection, _
-    ByRef originalValues As Object _
+    ByRef originalValues As Object, _
+    Optional ByVal dsn As String = "" _
 )
 
     Dim sSQL As String
 
     sSQL = Ofm_BuildLoadSql(schemaName, tableName, keyField, keyValue, fields)
 
-    Ofm_LoadFormBySql frm, dsn, sSQL, fields, originalValues, cModuleName & ".Ofm_LoadForm"
+    Ofm_LoadFormBySql frm, sSQL, fields, originalValues, cModuleName & ".Ofm_LoadForm", dsn
 
 End Sub
 
 Public Sub Ofm_LoadFormBySql( _
     ByRef frm As Access.Form, _
-    ByVal dsn As String, _
     ByVal sSQL As String, _
     ByRef fields As Collection, _
     ByRef originalValues As Object, _
-    Optional ByVal sourceProcName As String = "" _
+    Optional ByVal sourceProcName As String = "", _
+    Optional ByVal dsn As String = "" _
 )
 
     Dim rowData As Object
@@ -620,7 +623,7 @@ Public Sub Ofm_LoadFormBySql( _
         sourceProcName = cModuleName & ".Ofm_LoadFormBySql"
     End If
 
-    Set rowData = PTQ_GetRow(dsn, sSQL)
+    Set rowData = PTQ_GetRow(sSQL, dsn)
 
     Ofm_LoadFormFromRow frm, rowData, fields, originalValues, sourceProcName
 
@@ -798,7 +801,6 @@ End Function
 
 Public Function Ofm_Insert( _
     ByRef frm As Access.Form, _
-    ByVal dsn As String, _
     ByVal schemaName As String, _
     ByVal tableName As String, _
     ByVal keyField As String, _
@@ -806,7 +808,8 @@ Public Function Ofm_Insert( _
     ByRef originalValues As Object, _
     Optional ByVal sequenceName As String = "", _
     Optional ByVal reloadAfterInsert As Boolean = True, _
-    Optional ByVal reloadSql As String = "" _
+    Optional ByVal reloadSql As String = "", _
+    Optional ByVal dsn As String = "" _
 ) As Variant
 
     Dim sSQL As String
@@ -819,7 +822,7 @@ Public Function Ofm_Insert( _
     Set keyDef = Ofm_GetKeyField(fields)
 
     If Len(Trim$(sequenceName)) > 0 Then
-        newKeyValue = Oracle_GetNextSequenceValue(dsn, schemaName, sequenceName)
+        newKeyValue = Oracle_GetNextSequenceValue(schemaName, sequenceName, dsn)
         frm.Controls(keyDef.ControlName).Value = newKeyValue
     Else
         newKeyValue = Ofm_GetControlValue(frm, keyDef)
@@ -830,11 +833,11 @@ Public Function Ofm_Insert( _
     End If
 
     sSQL = Ofm_BuildInsertSql(frm, schemaName, tableName, fields)
-    PTQ_Execute dsn, sSQL
+    PTQ_Execute sSQL, , dsn
 
     If reloadAfterInsert Then
         sReloadSql = Ofm_ResolveReloadSql(schemaName, tableName, keyField, newKeyValue, fields, reloadSql)
-        Ofm_LoadFormBySql frm, dsn, sReloadSql, fields, originalValues, cModuleName & ".Ofm_Insert"
+        Ofm_LoadFormBySql frm, sReloadSql, fields, originalValues, cModuleName & ".Ofm_Insert", dsn
     Else
         Ofm_SnapshotValues frm, fields, originalValues
     End If
@@ -845,7 +848,6 @@ End Function
 
 Public Sub Ofm_Update( _
     ByRef frm As Access.Form, _
-    ByVal dsn As String, _
     ByVal schemaName As String, _
     ByVal tableName As String, _
     ByVal keyField As String, _
@@ -853,7 +855,8 @@ Public Sub Ofm_Update( _
     ByRef fields As Collection, _
     ByRef originalValues As Object, _
     Optional ByVal reloadAfterUpdate As Boolean = True, _
-    Optional ByVal reloadSql As String = "" _
+    Optional ByVal reloadSql As String = "", _
+    Optional ByVal dsn As String = "" _
 )
 
     Dim sSQL As String
@@ -865,11 +868,11 @@ Public Sub Ofm_Update( _
 
     If Len(sSQL) = 0 Then Exit Sub
 
-    PTQ_Execute dsn, sSQL
+    PTQ_Execute sSQL, , dsn
 
     If reloadAfterUpdate Then
         sReloadSql = Ofm_ResolveReloadSql(schemaName, tableName, keyField, keyValue, fields, reloadSql)
-        Ofm_LoadFormBySql frm, dsn, sReloadSql, fields, originalValues, cModuleName & ".Ofm_Update"
+        Ofm_LoadFormBySql frm, sReloadSql, fields, originalValues, cModuleName & ".Ofm_Update", dsn
     Else
         Ofm_SnapshotValues frm, fields, originalValues
     End If
@@ -877,23 +880,22 @@ Public Sub Ofm_Update( _
 End Sub
 
 Public Sub Ofm_Delete( _
-    ByVal dsn As String, _
     ByVal schemaName As String, _
     ByVal tableName As String, _
     ByVal keyField As String, _
-    ByVal keyValue As Variant _
+    ByVal keyValue As Variant, _
+    Optional ByVal dsn As String = "" _
 )
 
     Dim sSQL As String
 
     sSQL = Ofm_BuildDeleteSql(schemaName, tableName, keyField, keyValue)
-    PTQ_Execute dsn, sSQL
+    PTQ_Execute sSQL, , dsn
 
 End Sub
 
 Public Function Ofm_SaveRecord( _
     ByRef frm As Access.Form, _
-    ByVal dsn As String, _
     ByVal schemaName As String, _
     ByVal tableName As String, _
     ByVal keyField As String, _
@@ -902,7 +904,8 @@ Public Function Ofm_SaveRecord( _
     ByVal isNewRecord As Boolean, _
     Optional ByVal sequenceName As String = "", _
     Optional ByVal reloadAfterSave As Boolean = True, _
-    Optional ByVal reloadSql As String = "" _
+    Optional ByVal reloadSql As String = "", _
+    Optional ByVal dsn As String = "" _
 ) As Variant
 
     Dim keyDef As clsOracleFormField
@@ -913,7 +916,6 @@ Public Function Ofm_SaveRecord( _
     If isNewRecord Then
         Ofm_SaveRecord = Ofm_Insert( _
             frm:=frm, _
-            dsn:=dsn, _
             schemaName:=schemaName, _
             tableName:=tableName, _
             keyField:=keyField, _
@@ -921,7 +923,8 @@ Public Function Ofm_SaveRecord( _
             originalValues:=originalValues, _
             sequenceName:=sequenceName, _
             reloadAfterInsert:=reloadAfterSave, _
-            reloadSql:=reloadSql)
+            reloadSql:=reloadSql, _
+            dsn:=dsn)
     Else
         keyValue = Ofm_GetControlValue(frm, keyDef)
 
@@ -932,7 +935,6 @@ Public Function Ofm_SaveRecord( _
 
         Ofm_Update _
             frm:=frm, _
-            dsn:=dsn, _
             schemaName:=schemaName, _
             tableName:=tableName, _
             keyField:=keyField, _
@@ -940,7 +942,8 @@ Public Function Ofm_SaveRecord( _
             fields:=fields, _
             originalValues:=originalValues, _
             reloadAfterUpdate:=reloadAfterSave, _
-            reloadSql:=reloadSql
+            reloadSql:=reloadSql, _
+            dsn:=dsn
 
         Ofm_SaveRecord = keyValue
     End If
