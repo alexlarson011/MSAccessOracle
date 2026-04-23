@@ -362,8 +362,7 @@ Public Sub OracleAdmin_SwitchEnvironment( _
     Optional ByVal updatePassthroughQueries As Boolean = True, _
     Optional ByVal updateLinkedTables As Boolean = False, _
     Optional ByVal linkedTableFromSchema As String = "", _
-    Optional ByVal linkedTableToSchema As String = "", _
-    Optional ByVal excludeSharePointTables As Boolean = True _
+    Optional ByVal linkedTableToSchema As String = "" _
 )
 
     On Error GoTo ErrHandler
@@ -414,8 +413,7 @@ Public Sub OracleAdmin_SwitchEnvironment( _
         Call OracleLink_SetAllLinkedTableConnections( _
             sToDSN:=dsnName, _
             sFromSchema:=linkedTableFromSchema, _
-            sToSchema:=linkedTableToSchema, _
-            excludeSharePoint:=excludeSharePointTables)
+            sToSchema:=linkedTableToSchema)
     End If
 
     OracleSession_Clear

@@ -21,8 +21,7 @@
 ' This module is responsible for:
 '
 '     - determining whether a table exists
-'     - determining whether a table is linked
-'     - identifying SharePoint-linked tables
+'     - determining whether a table is an Oracle-manageable ODBC linked table
 '     - reading DSN and schema information from linked tables
 '     - creating Oracle linked tables
 '     - deleting linked tables
@@ -37,7 +36,7 @@
 ' ------------------
 ' inspection:
 '     OracleLink_IsLinkedTable
-'     OracleLink_IsSharePointTable
+'     OracleLink_IsOracleODBCLinkedTable
 '     OracleLink_TableExists
 '     OracleLink_GetLinkedTableDSN
 '     OracleLink_GetLinkedTableSchema
@@ -99,12 +98,12 @@
 '     - admin diagnostics
 '
 '
-' SharePoint handling
-' -------------------
-' Several routines optionally exclude SharePoint-linked tables.
+' External link handling
+' ----------------------
+' This module intentionally targets only Oracle-manageable ODBC linked tables.
 '
-' This avoids incorrectly treating SharePoint tables as Oracle-linked tables during
-' DSN comparison and relinking operations.
+' By default, bulk inspection, testing, and retargeting routines ignore other
+' external linked tables such as SharePoint, Excel, text, or non-ODBC links.
 '
 '
 ' Design notes
@@ -136,7 +135,7 @@ Private Const cModuleName As String = "modOracleLinking"
 ' Linked-table inspection helpers
 '------------------------------------------------------------------------------------
 
-Public Function OracleLink_IsLinkedTable(ByVal sTableName As String) As Boolean
+Private Function OracleLink_GetTableDef(ByVal sTableName As String) As DAO.TableDef
 
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
@@ -147,37 +146,55 @@ Public Function OracleLink_IsLinkedTable(ByVal sTableName As String) As Boolean
     Set tdf = db.TableDefs(sTableName)
     On Error GoTo 0
 
-    If tdf Is Nothing Then GoTo Cleanup
+    Set OracleLink_GetTableDef = tdf
 
-    OracleLink_IsLinkedTable = (Len(Nz(tdf.Connect, vbNullString)) > 0)
-
-Cleanup:
     Set tdf = Nothing
     Set db = Nothing
 
 End Function
 
-Public Function OracleLink_IsSharePointTable(ByVal sTableName As String) As Boolean
+Private Function OracleLink_IsOracleODBCLinkedTableDef(ByRef tdf As DAO.TableDef) As Boolean
 
-    Dim db As DAO.Database
+    Dim sConnect As String
+
+    If tdf Is Nothing Then Exit Function
+
+    sConnect = Nz(tdf.Connect, vbNullString)
+
+    If Len(sConnect) = 0 Then Exit Function
+    If (tdf.Attributes And dbAttachedODBC) = 0 Then Exit Function
+    If InStr(1, sConnect, "ODBC;", vbTextCompare) = 0 Then Exit Function
+    If InStr(1, sConnect, "DSN=", vbTextCompare) = 0 Then Exit Function
+    If Len(Nz(tdf.SourceTableName, vbNullString)) = 0 Then Exit Function
+
+    OracleLink_IsOracleODBCLinkedTableDef = True
+
+End Function
+
+Public Function OracleLink_IsLinkedTable(ByVal sTableName As String) As Boolean
+
     Dim tdf As DAO.TableDef
-    Dim prop As DAO.Property
 
-    Set db = CurrentDb
+    Set tdf = OracleLink_GetTableDef(sTableName)
 
-    On Error Resume Next
-    Set tdf = db.TableDefs(sTableName)
-    If Not tdf Is Nothing Then
-        Set prop = tdf.Properties("SharePointListCreateTime")
-    End If
-    On Error GoTo 0
+    If tdf Is Nothing Then GoTo Cleanup
 
-    OracleLink_IsSharePointTable = Not prop Is Nothing
+    OracleLink_IsLinkedTable = OracleLink_IsOracleODBCLinkedTableDef(tdf)
 
 Cleanup:
-    Set prop = Nothing
     Set tdf = Nothing
-    Set db = Nothing
+
+End Function
+
+Public Function OracleLink_IsOracleODBCLinkedTable(ByVal sTableName As String) As Boolean
+
+    Dim tdf As DAO.TableDef
+
+    Set tdf = OracleLink_GetTableDef(sTableName)
+    OracleLink_IsOracleODBCLinkedTable = OracleLink_IsOracleODBCLinkedTableDef(tdf)
+
+Cleanup:
+    Set tdf = Nothing
 
 End Function
 
@@ -202,19 +219,15 @@ End Function
 
 Public Function OracleLink_GetLinkedTableDSN(ByVal sTableName As String) As String
 
-    Dim db As DAO.Database
     Dim tdf As DAO.TableDef
+    Dim sConnect As String
     Dim lStartPos As Long
     Dim lEndPos As Long
-    Dim sConnect As String
 
-    Set db = CurrentDb
-
-    On Error Resume Next
-    Set tdf = db.TableDefs(sTableName)
-    On Error GoTo 0
+    Set tdf = OracleLink_GetTableDef(sTableName)
 
     If tdf Is Nothing Then Exit Function
+    If Not OracleLink_IsOracleODBCLinkedTableDef(tdf) Then Exit Function
 
     sConnect = Nz(tdf.Connect, vbNullString)
 
@@ -231,24 +244,19 @@ Public Function OracleLink_GetLinkedTableDSN(ByVal sTableName As String) As Stri
 
 Cleanup:
     Set tdf = Nothing
-    Set db = Nothing
 
 End Function
 
 Public Function OracleLink_GetLinkedTableSchema(ByVal sTableName As String) As String
 
-    Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim lDotPos As Long
     Dim sSourceTableName As String
 
-    Set db = CurrentDb
-
-    On Error Resume Next
-    Set tdf = db.TableDefs(sTableName)
-    On Error GoTo 0
+    Set tdf = OracleLink_GetTableDef(sTableName)
 
     If tdf Is Nothing Then Exit Function
+    If Not OracleLink_IsOracleODBCLinkedTableDef(tdf) Then Exit Function
 
     sSourceTableName = Nz(tdf.SourceTableName, vbNullString)
 
@@ -262,24 +270,19 @@ Public Function OracleLink_GetLinkedTableSchema(ByVal sTableName As String) As S
 
 Cleanup:
     Set tdf = Nothing
-    Set db = Nothing
 
 End Function
 
 Public Function OracleLink_GetLinkedTableSourceName(ByVal sTableName As String) As String
 
-    Dim db As DAO.Database
     Dim tdf As DAO.TableDef
     Dim lDotPos As Long
     Dim sSourceTableName As String
 
-    Set db = CurrentDb
-
-    On Error Resume Next
-    Set tdf = db.TableDefs(sTableName)
-    On Error GoTo 0
+    Set tdf = OracleLink_GetTableDef(sTableName)
 
     If tdf Is Nothing Then Exit Function
+    If Not OracleLink_IsOracleODBCLinkedTableDef(tdf) Then Exit Function
 
     sSourceTableName = Nz(tdf.SourceTableName, vbNullString)
 
@@ -295,13 +298,10 @@ Public Function OracleLink_GetLinkedTableSourceName(ByVal sTableName As String) 
 
 Cleanup:
     Set tdf = Nothing
-    Set db = Nothing
 
 End Function
 
-Public Function OracleLink_GetLinkedTableNames( _
-    Optional ByVal excludeSharePoint As Boolean = True _
-) As Collection
+Public Function OracleLink_GetLinkedTableNames() As Collection
 
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
@@ -311,10 +311,8 @@ Public Function OracleLink_GetLinkedTableNames( _
     Set db = CurrentDb
 
     For Each tdf In db.TableDefs
-        If Len(Nz(tdf.Connect, vbNullString)) > 0 Then
-            If Not excludeSharePoint Or Not OracleLink_IsSharePointTable(tdf.Name) Then
-                result.Add tdf.Name
-            End If
+        If OracleLink_IsOracleODBCLinkedTableDef(tdf) Then
+            result.Add tdf.Name
         End If
     Next tdf
 
@@ -326,9 +324,7 @@ Cleanup:
 
 End Function
 
-Public Function OracleLink_GetLinkedTableDetails( _
-    Optional ByVal excludeSharePoint As Boolean = True _
-) As Collection
+Public Function OracleLink_GetLinkedTableDetails() As Collection
 
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
@@ -339,16 +335,14 @@ Public Function OracleLink_GetLinkedTableDetails( _
     Set db = CurrentDb
 
     For Each tdf In db.TableDefs
-        If Len(Nz(tdf.Connect, vbNullString)) > 0 Then
-            If Not excludeSharePoint Or Not OracleLink_IsSharePointTable(tdf.Name) Then
-                Set item = CreateObject("Scripting.Dictionary")
-                item.Add "TableName", tdf.Name
-                item.Add "DSN", OracleLink_GetLinkedTableDSN(tdf.Name)
-                item.Add "Schema", OracleLink_GetLinkedTableSchema(tdf.Name)
-                item.Add "SourceTableName", Nz(tdf.SourceTableName, vbNullString)
-                item.Add "Connect", Nz(tdf.Connect, vbNullString)
-                result.Add item
-            End If
+        If OracleLink_IsOracleODBCLinkedTableDef(tdf) Then
+            Set item = CreateObject("Scripting.Dictionary")
+            item.Add "TableName", tdf.Name
+            item.Add "DSN", OracleLink_GetLinkedTableDSN(tdf.Name)
+            item.Add "Schema", OracleLink_GetLinkedTableSchema(tdf.Name)
+            item.Add "SourceTableName", Nz(tdf.SourceTableName, vbNullString)
+            item.Add "Connect", Nz(tdf.Connect, vbNullString)
+            result.Add item
         End If
     Next tdf
 
@@ -448,7 +442,7 @@ Public Sub OracleLink_DeleteLinkedTable(ByVal sTableName As String)
     End If
 
     If Not OracleLink_IsLinkedTable(sTableName) Then
-        Err.Raise vbObjectError + 3012, cModuleName & ".OracleLink_DeleteLinkedTable", "Table is not linked: " & sTableName
+        Err.Raise vbObjectError + 3012, cModuleName & ".OracleLink_DeleteLinkedTable", "Table is not an Oracle ODBC linked table: " & sTableName
     End If
 
     Set db = CurrentDb
@@ -481,8 +475,8 @@ Public Sub OracleLink_RefreshLinkedTable(ByVal sTableName As String)
         Err.Raise vbObjectError + 3014, cModuleName & ".OracleLink_RefreshLinkedTable", "Table not found: " & sTableName
     End If
 
-    If Len(Nz(tdf.Connect, vbNullString)) = 0 Then
-        Err.Raise vbObjectError + 3015, cModuleName & ".OracleLink_RefreshLinkedTable", "Table is not linked: " & sTableName
+    If Not OracleLink_IsOracleODBCLinkedTableDef(tdf) Then
+        Err.Raise vbObjectError + 3015, cModuleName & ".OracleLink_RefreshLinkedTable", "Table is not an Oracle ODBC linked table: " & sTableName
     End If
 
     tdf.RefreshLink
@@ -532,8 +526,8 @@ Public Function OracleLink_SetLinkedTableConnection( _
         Err.Raise vbObjectError + 3021, cModuleName & ".OracleLink_SetLinkedTableConnection", "Table not found: " & sTableName
     End If
 
-    If Len(Nz(tdf.Connect, vbNullString)) = 0 Then
-        Err.Raise vbObjectError + 3022, cModuleName & ".OracleLink_SetLinkedTableConnection", "Table is not linked: " & sTableName
+    If Not OracleLink_IsOracleODBCLinkedTableDef(tdf) Then
+        Err.Raise vbObjectError + 3022, cModuleName & ".OracleLink_SetLinkedTableConnection", "Table is not an Oracle ODBC linked table: " & sTableName
     End If
 
     sStartDSN = OracleLink_GetLinkedTableDSN(sTableName)
@@ -613,8 +607,7 @@ End Function
 Public Function OracleLink_SetAllLinkedTableConnections( _
     ByVal sToDSN As String, _
     Optional ByVal sFromSchema As String = "", _
-    Optional ByVal sToSchema As String = "", _
-    Optional ByVal excludeSharePoint As Boolean = True _
+    Optional ByVal sToSchema As String = "" _
 ) As Collection
 
     Dim db As DAO.Database
@@ -650,11 +643,7 @@ Public Function OracleLink_SetAllLinkedTableConnections( _
 
     For Each tdf In db.TableDefs
 
-        bShouldProcess = (Len(Nz(tdf.Connect, vbNullString)) > 0)
-
-        If bShouldProcess And excludeSharePoint Then
-            If OracleLink_IsSharePointTable(tdf.Name) Then bShouldProcess = False
-        End If
+        bShouldProcess = OracleLink_IsOracleODBCLinkedTableDef(tdf)
 
         If bShouldProcess Then
 
@@ -730,8 +719,8 @@ Public Function OracleLink_TestLinkedTable(ByVal sTableName As String) As Boolea
         Err.Raise vbObjectError + 3041, cModuleName & ".OracleLink_TestLinkedTable", "Table not found: " & sTableName
     End If
 
-    If Len(Nz(tdf.Connect, vbNullString)) = 0 Then
-        Err.Raise vbObjectError + 3042, cModuleName & ".OracleLink_TestLinkedTable", "Table is not linked: " & sTableName
+    If Not OracleLink_IsOracleODBCLinkedTableDef(tdf) Then
+        Err.Raise vbObjectError + 3042, cModuleName & ".OracleLink_TestLinkedTable", "Table is not an Oracle ODBC linked table: " & sTableName
     End If
 
     Set rs = tdf.OpenRecordset(dbOpenSnapshot)
@@ -751,9 +740,7 @@ HandleErr:
 
 End Function
 
-Public Function OracleLink_TestAllLinkedTables( _
-    Optional ByVal excludeSharePoint As Boolean = True _
-) As Collection
+Public Function OracleLink_TestAllLinkedTables() As Collection
 
     Dim db As DAO.Database
     Dim tdf As DAO.TableDef
@@ -766,11 +753,7 @@ Public Function OracleLink_TestAllLinkedTables( _
 
     For Each tdf In db.TableDefs
 
-        shouldTest = (Len(Nz(tdf.Connect, vbNullString)) > 0)
-
-        If shouldTest And excludeSharePoint Then
-            If OracleLink_IsSharePointTable(tdf.Name) Then shouldTest = False
-        End If
+        shouldTest = OracleLink_IsOracleODBCLinkedTableDef(tdf)
 
         If shouldTest Then
             Set item = CreateObject("Scripting.Dictionary")
@@ -805,8 +788,7 @@ Cleanup:
 End Function
 
 Public Function OracleLink_CheckLinkedTableDSNMismatch( _
-    Optional ByVal sDSNCheckValue As String = "", _
-    Optional ByVal excludeSharePoint As Boolean = True _
+    Optional ByVal sDSNCheckValue As String = "" _
 ) As Boolean
 
     Dim db As DAO.Database
@@ -822,12 +804,10 @@ Public Function OracleLink_CheckLinkedTableDSNMismatch( _
     Set db = CurrentDb
 
     For Each tdf In db.TableDefs
-        If Len(Nz(tdf.Connect, vbNullString)) > 0 Then
-            If Not excludeSharePoint Or Not OracleLink_IsSharePointTable(tdf.Name) Then
-                If OracleLink_GetLinkedTableDSN(tdf.Name) <> sCheck Then
-                    OracleLink_CheckLinkedTableDSNMismatch = True
-                    Exit Function
-                End If
+        If OracleLink_IsOracleODBCLinkedTableDef(tdf) Then
+            If OracleLink_GetLinkedTableDSN(tdf.Name) <> sCheck Then
+                OracleLink_CheckLinkedTableDSNMismatch = True
+                Exit Function
             End If
         End If
     Next tdf
