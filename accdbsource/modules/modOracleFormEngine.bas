@@ -1121,7 +1121,11 @@ Private Sub Ofm_PrepareListControl( _
     ctl.BoundColumn = boundColumn
 
     On Error Resume Next
+    ctl.ControlSource = vbNullString
     ctl.MultiSelect = 0
+    ctl.Enabled = True
+    ctl.Locked = False
+    ctl.TabStop = True
     On Error GoTo 0
 
     If Len(columnWidths) > 0 Then
