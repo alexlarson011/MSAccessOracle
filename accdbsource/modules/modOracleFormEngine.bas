@@ -1123,9 +1123,12 @@ Private Sub Ofm_PrepareListControl( _
     On Error Resume Next
     ctl.ControlSource = vbNullString
     ctl.MultiSelect = 0
+    ctl.ColumnHeads = False
+    ctl.ListStyle = 0
     ctl.Enabled = True
     ctl.Locked = False
     ctl.TabStop = True
+    ctl.ListIndex = -1
     On Error GoTo 0
 
     If Len(columnWidths) > 0 Then

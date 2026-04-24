@@ -654,6 +654,97 @@ Design recommendation:
   `clsOracleFormField` can make sense
 
 
+## 6C. Record-picker listbox pattern
+
+This is an important distinction in this architecture:
+
+- a record-edit control belongs in `mFields`
+- a navigation/search picker usually does not
+
+A listbox that exists only to let the user choose which record to open or load
+should usually stay outside the `clsOracleFormField` collection.
+
+Why:
+
+- `clsOracleFormField` is designed for controls that represent the current record
+- `Ofm_SnapshotValues`, `Ofm_IsDirty`, and `Ofm_SaveRecord` assume those controls are
+  part of the record model
+- a navigation picker is different: it selects the record, but it is not itself a
+  field on that record
+
+Recommended pattern:
+
+1. do not add the picker listbox to `mFields`
+2. load it separately with `Ofm_LoadListControlBySql`
+3. use its selected value to load/open the chosen record
+
+Example loader:
+
+```vb
+Private Sub LoadRecordPicker()
+
+    Ofm_LoadListControlBySql _
+        Me, _
+        "lstRecords", _
+        Join(Array( _
+            "SELECT RECORD_ID, RECORD_NAME, STATUS_TEXT", _
+            "FROM APP_RECORD_VW", _
+            "ORDER BY RECORD_NAME" _
+        ), vbCrLf), _
+        1, _
+        2, _
+        False, _
+        "", _
+        "0;2.0;1.2""", _
+        2500
+
+End Sub
+```
+
+Example same-form load on double-click:
+
+```vb
+Private Sub lstRecords_DblClick(Cancel As Integer)
+
+    If IsNull(Me.lstRecords.Value) Then Exit Sub
+
+    Ofm_LoadForm _
+        Me, _
+        Get_DB_Schema(), _
+        cTableName, _
+        cKeyField, _
+        Me.lstRecords.Value, _
+        mFields, _
+        mOriginalValues
+
+    mIsNewRecord = False
+
+End Sub
+```
+
+Example open-another-form pattern:
+
+```vb
+Private Sub lstRecords_DblClick(Cancel As Integer)
+
+    If IsNull(Me.lstRecords.Value) Then Exit Sub
+
+    DoCmd.OpenForm "frmAppRecord", , , , , , Me.lstRecords.Value
+
+End Sub
+```
+
+When it does make sense to use `clsOracleFormField` for a listbox:
+
+- the selected listbox value is actually part of the current record being edited
+- the listbox behaves as an input control, not as a navigator
+
+In short:
+
+- picker listbox: keep it outside `mFields`
+- editable listbox field: putting it in `mFields` can be appropriate
+
+
 ## 7. Loading an existing base-table record
 
 The simplest load path is `Ofm_LoadForm`.
