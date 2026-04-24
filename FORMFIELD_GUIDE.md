@@ -607,6 +607,10 @@ Important Access detail:
 - `BoundColumn` is one-based
 - `.Column(index)` is zero-based
 
+The current helper pattern prepares listboxes for single selection. That matches the
+rest of the form engine, which assumes a listbox can expose one current selected
+value through `.Value`.
+
 Typical double-click navigation pattern:
 
 ```vb

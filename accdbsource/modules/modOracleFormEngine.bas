@@ -1120,6 +1120,10 @@ Private Sub Ofm_PrepareListControl( _
     ctl.ColumnCount = columnCount
     ctl.BoundColumn = boundColumn
 
+    On Error Resume Next
+    ctl.MultiSelect = 0
+    On Error GoTo 0
+
     If Len(columnWidths) > 0 Then
         ctl.ColumnWidths = columnWidths
     End If
