@@ -1,0 +1,33 @@
+Option Compare Database
+Option Explicit
+
+Private Sub Form_Load()
+
+    LoadRecordPicker
+
+End Sub
+
+Private Sub lstProjects_Click()
+
+    Debug.Print "hello"
+    
+End Sub
+
+Private Sub LoadRecordPicker()
+
+    Ofm_LoadListControlBySql _
+        Me, _
+        "lstProjects", _
+        "SELECT cppo.proj_optn_id, cppo.project_id, cppo.parent_project_id, proj.project_nm " & _
+        "FROM constr_partnrshp_admin.constr_partnrshp_proj_optn cppo " & _
+        "JOIN ps_admin.ps_project proj " & _
+        "ON proj.business_unit_nbr = cppo.business_unit_nbr " & _
+        "    AND proj.project_id = cppo.project_id " & _
+        "WHERE constr_partnrshp_id = 1", _
+        1, _
+        2, _
+        False, _
+        "", _
+        "0.25"";1.5"";1.5"";1.5"""
+        
+End Sub
