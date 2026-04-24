@@ -62,9 +62,7 @@ The recommended lifecycle is:
    - call `LoadLookups`
 
 3. Save button
-   - call form-specific validation
-   - call `Ofm_SaveRecord`
-   - update `mIsNewRecord`
+   - call a local `SaveRecord()` function
    - show success message if appropriate
 
 4. Delete button
@@ -73,8 +71,8 @@ The recommended lifecycle is:
    - close the form
 
 5. Close / cancel behavior
-   - optionally check `Ofm_IsDirty`
-   - prompt before discarding changes
+   - call `PromptToSaveIfDirty`
+   - use `Ofm_IsDirty` to detect unsaved changes
 
 
 ## 3. Recommended module-level members
@@ -92,6 +90,7 @@ Private Const cSequenceName As String = "APP_RECORD_SEQ"
 Private mFields As Collection
 Private mOriginalValues As Object
 Private mIsNewRecord As Boolean
+Private mAllowClose As Boolean
 ```
 
 If the form does not use a sequence for inserts, omit `cSequenceName` or leave it
@@ -107,9 +106,12 @@ The standard form should usually have these procedures:
 - `ConfigureFields`
 - `LoadLookups`
 - `ValidateForm`
+- `SaveRecord`
 - `btnSave_Click`
 - `btnDelete_Click`
-- optionally `btnClose_Click`
+- `PromptToSaveIfDirty`
+- `btnClose_Click`
+- `Form_Unload`
 
 That gives each form one obvious place for each kind of logic.
 
@@ -127,6 +129,7 @@ Private Const cSequenceName As String = "APP_RECORD_SEQ"
 Private mFields As Collection
 Private mOriginalValues As Object
 Private mIsNewRecord As Boolean
+Private mAllowClose As Boolean
 
 Private Sub Form_Open(Cancel As Integer)
 
@@ -197,6 +200,8 @@ End Sub
 
 Private Sub ValidateForm()
 
+    Ofm_ValidateRequiredFields Me, mFields
+
     If Not IsNull(Me.txtRecordName.Value) Then
         If Len(Trim$(Me.txtRecordName.Value)) < 3 Then
             Me.txtRecordName.SetFocus
@@ -207,7 +212,7 @@ Private Sub ValidateForm()
 
 End Sub
 
-Private Sub btnSave_Click()
+Private Function SaveRecord() As Boolean
 
     Dim savedKey As Variant
 
@@ -228,12 +233,19 @@ Private Sub btnSave_Click()
 
     Me.RECORD_ID = savedKey
     mIsNewRecord = False
-
-    MsgBox "Record saved.", vbInformation
-    Exit Sub
+    SaveRecord = True
+    Exit Function
 
 ErrHandler:
     MsgBox Err.Description, vbExclamation
+
+End Function
+
+Private Sub btnSave_Click()
+
+    If SaveRecord() Then
+        MsgBox "Record saved.", vbInformation
+    End If
 
 End Sub
 
@@ -247,11 +259,60 @@ Private Sub btnDelete_Click()
 
     Ofm_Delete Get_DB_Schema(), cTableName, cKeyField, Me.RECORD_ID
 
+    mAllowClose = True
     DoCmd.Close acForm, Me.Name
     Exit Sub
 
 ErrHandler:
     MsgBox Err.Description, vbExclamation
+
+End Sub
+
+Private Function PromptToSaveIfDirty() As Boolean
+
+    Dim response As VbMsgBoxResult
+
+    PromptToSaveIfDirty = False
+
+    If Not Ofm_IsDirty(Me, mFields, mOriginalValues) Then
+        PromptToSaveIfDirty = True
+        Exit Function
+    End If
+
+    response = MsgBox( _
+        "Save changes before closing?", _
+        vbYesNoCancel + vbQuestion, _
+        "Unsaved Changes")
+
+    Select Case response
+        Case vbYes
+            PromptToSaveIfDirty = SaveRecord()
+
+        Case vbNo
+            PromptToSaveIfDirty = True
+
+        Case vbCancel
+            PromptToSaveIfDirty = False
+    End Select
+
+End Function
+
+Private Sub btnClose_Click()
+
+    If Not PromptToSaveIfDirty() Then Exit Sub
+
+    mAllowClose = True
+    DoCmd.Close acForm, Me.Name
+
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If mAllowClose Then Exit Sub
+
+    If Not PromptToSaveIfDirty() Then
+        Cancel = True
+    End If
 
 End Sub
 ```
@@ -357,6 +418,8 @@ Example:
 ```vb
 Private Sub ValidateForm()
 
+    Ofm_ValidateRequiredFields Me, mFields
+
     If Nz(Me.cboStatus.Value, vbNullString) = "CLOSED" Then
         If IsNull(Me.txtClosedDate.Value) Then
             Me.txtClosedDate.SetFocus
@@ -375,18 +438,25 @@ If it grows large, move business rules to a dedicated domain module.
 
 ## 9. Recommended save pattern
 
-The save button should usually:
+Prefer a local `SaveRecord()` function that returns `True` only after a successful
+save. That keeps the button event simple and lets close/unload prompts reuse the
+same save path.
+
+`Ofm_SaveRecord` refreshes `mOriginalValues` after a successful insert/update, so
+`Ofm_IsDirty` should return `False` immediately after this function succeeds.
+
+The save path should usually:
 
 1. run `ValidateForm`
 2. call `Ofm_SaveRecord`
 3. update `mIsNewRecord`
 4. update the key control if needed
-5. show a user-facing success message if appropriate
+5. return `True`
 
 Recommended shape:
 
 ```vb
-Private Sub btnSave_Click()
+Private Function SaveRecord() As Boolean
 
     Dim savedKey As Variant
 
@@ -407,10 +477,19 @@ Private Sub btnSave_Click()
 
     Me.RECORD_ID = savedKey
     mIsNewRecord = False
-    Exit Sub
+    SaveRecord = True
+    Exit Function
 
 ErrHandler:
     MsgBox Err.Description, vbExclamation
+
+End Function
+
+Private Sub btnSave_Click()
+
+    If SaveRecord() Then
+        MsgBox "Record saved.", vbInformation
+    End If
 
 End Sub
 ```
@@ -438,6 +517,7 @@ Private Sub btnDelete_Click()
 
     Ofm_Delete Get_DB_Schema(), cTableName, cKeyField, Me.RECORD_ID
 
+    mAllowClose = True
     DoCmd.Close acForm, Me.Name
 
 End Sub
@@ -446,21 +526,68 @@ End Sub
 
 ## 11. Recommended close/cancel pattern
 
-If the form has a close button, prefer this pattern:
+Use `Ofm_IsDirty` for the dirty check. It compares current control values to the
+snapshot in `mOriginalValues`.
+
+For close behavior, prefer one shared prompt function. The close button and
+`Form_Unload` should both call it, so users get the same prompt whether they use
+your button or Access's window close button.
 
 ```vb
-Private Sub btnClose_Click()
+Private mAllowClose As Boolean
 
-    If Ofm_IsDirty(Me, mFields, mOriginalValues) Then
-        If MsgBox("Discard unsaved changes?", vbQuestion + vbYesNo) = vbNo Then Exit Sub
+Private Function PromptToSaveIfDirty() As Boolean
+
+    Dim response As VbMsgBoxResult
+
+    PromptToSaveIfDirty = False
+
+    If Not Ofm_IsDirty(Me, mFields, mOriginalValues) Then
+        PromptToSaveIfDirty = True
+        Exit Function
     End If
 
+    response = MsgBox( _
+        "Save changes before closing?", _
+        vbYesNoCancel + vbQuestion, _
+        "Unsaved Changes")
+
+    Select Case response
+        Case vbYes
+            PromptToSaveIfDirty = SaveRecord()
+
+        Case vbNo
+            PromptToSaveIfDirty = True
+
+        Case vbCancel
+            PromptToSaveIfDirty = False
+    End Select
+
+End Function
+
+Private Sub btnClose_Click()
+
+    If Not PromptToSaveIfDirty() Then Exit Sub
+
+    mAllowClose = True
     DoCmd.Close acForm, Me.Name
+
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+
+    If mAllowClose Then Exit Sub
+
+    If Not PromptToSaveIfDirty() Then
+        Cancel = True
+    End If
 
 End Sub
 ```
 
-That gives a consistent unsaved-changes experience.
+This gives users three clear choices: save, discard, or cancel closing.
+
+One practical note: `mAllowClose` prevents the close button from prompting twice.
 
 
 ## 12. Recommended naming pattern

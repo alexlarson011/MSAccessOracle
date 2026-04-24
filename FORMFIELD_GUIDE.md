@@ -563,6 +563,57 @@ Ofm_LoadListControlBySql _
 ```
 
 
+## 6A.1 Static Yes/No combo pattern
+
+For Oracle fields that store `Y` / `N` but should display `Yes` / `No` in Access,
+use a two-column combo box:
+
+- column 1 = stored Oracle value
+- column 2 = user-friendly display text
+
+Example:
+
+```vb
+Set f = Ofm_AddField(mFields, "ACTIVE_INDC", "cboActive")
+f.ControlKind = "COMBOBOX"
+f.LookupSql = Join(Array( _
+    "SELECT 'Y' AS ACTIVE_INDC, 'Yes' AS ACTIVE_LABEL FROM DUAL", _
+    "UNION ALL", _
+    "SELECT 'N' AS ACTIVE_INDC, 'No' AS ACTIVE_LABEL FROM DUAL" _
+), vbCrLf)
+f.LookupBoundColumn = 1
+f.LookupDisplayColumn = 2
+f.LookupColumnWidths = "0;0.8"""
+f.DefaultValue = "Y"
+```
+
+That means:
+
+- the user sees `Yes` and `No`
+- the combo box stores `Y` and `N`
+- new records default to `Y`
+
+If you want `N` as the default instead:
+
+```vb
+f.DefaultValue = "N"
+```
+
+If you want a blank choice at the top:
+
+```vb
+f.LookupIncludeBlankRow = True
+f.LookupBlankCaption = ""
+```
+
+If you want headers too:
+
+```vb
+f.LookupShowColumnHeads = True
+f.LookupColumnHeadCaptions = "Code;Value"
+```
+
+
 ## 6B. Multi-column listbox pattern
 
 For a multi-column listbox in this architecture, the pattern is:
@@ -999,6 +1050,61 @@ This is useful for:
 - save prompts
 - debug tracing
 - custom auditing
+
+For close prompts, keep save logic in a function that returns success, then call it
+from the prompt:
+
+```vb
+Private Function SaveRecord() As Boolean
+
+    On Error GoTo ErrHandler
+
+    ValidateForm
+
+    Ofm_SaveRecord _
+        Me, _
+        Get_DB_Schema(), _
+        cTableName, _
+        cKeyField, _
+        mFields, _
+        mOriginalValues, _
+        mIsNewRecord, _
+        cSequenceName
+
+    mIsNewRecord = False
+    SaveRecord = True
+    Exit Function
+
+ErrHandler:
+    MsgBox Err.Description, vbExclamation
+
+End Function
+
+Private Function PromptToSaveIfDirty() As Boolean
+
+    Dim response As VbMsgBoxResult
+
+    If Not Ofm_IsDirty(Me, mFields, mOriginalValues) Then
+        PromptToSaveIfDirty = True
+        Exit Function
+    End If
+
+    response = MsgBox("Save changes before closing?", vbYesNoCancel + vbQuestion, "Unsaved Changes")
+
+    Select Case response
+        Case vbYes
+            PromptToSaveIfDirty = SaveRecord()
+        Case vbNo
+            PromptToSaveIfDirty = True
+        Case vbCancel
+            PromptToSaveIfDirty = False
+    End Select
+
+End Function
+```
+
+`Ofm_SaveRecord` updates `mOriginalValues` after a successful save, so the dirty
+check should clear automatically once the save succeeds.
 
 
 ## 15. Generic end-to-end example
