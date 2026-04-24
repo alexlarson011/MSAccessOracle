@@ -462,6 +462,8 @@ Relevant properties:
 - `LookupBoundColumn`
 - `LookupDisplayColumn`
 - `LookupColumnWidths`
+- `LookupShowColumnHeads`
+- `LookupColumnHeadCaptions`
 - `LookupIncludeBlankRow`
 - `LookupBlankCaption`
 - `LookupMaxRows`
@@ -482,6 +484,8 @@ f.LookupSql = _
     "ORDER BY STATUS_TEXT"
 f.LookupBoundColumn = 1
 f.LookupDisplayColumn = 2
+f.LookupShowColumnHeads = True
+f.LookupColumnHeadCaptions = "Code;Status"
 f.LookupIncludeBlankRow = True
 f.LookupBlankCaption = ""
 f.LookupColumnWidths = "0;1.5"""
@@ -493,6 +497,7 @@ That tells the engine:
 - populate `cboStatus` from Oracle SQL
 - use the first returned column as the stored value
 - treat the second returned column as the intended display column
+- show column headers above the dropdown/list values
 - include a blank choice at the top
 - hide the bound code column by setting the first width to `0`
 
@@ -502,6 +507,14 @@ stateless Oracle pattern.
 
 Access ultimately decides which columns are visible from `ColumnWidths`, so
 `LookupDisplayColumn` is most useful when paired with `LookupColumnWidths`.
+
+If `LookupShowColumnHeads = True` and `LookupColumnHeadCaptions` is blank, the
+engine uses the returned SQL column names or aliases as the header row. If you want
+friendlier labels, provide semicolon-delimited captions such as:
+
+```vb
+f.LookupColumnHeadCaptions = "Record ID;Record Name;Status"
+```
 
 `LookupMaxRows` defaults to `2500`. The helper applies that as an Oracle-side row
 limit and raises an error if more than the allowed number of rows are returned.
@@ -544,6 +557,8 @@ Ofm_LoadListControlBySql _
     True, _
     "", _
     "0;1.5""", _
+    True, _
+    "Code;Status", _
     2500
 ```
 
@@ -573,7 +588,9 @@ Ofm_LoadListControlBySql _
     2, _
     False, _
     "", _
-    "0;2.0;1.2"""
+    "0;2.0;1.2""", _
+    True, _
+    "ID;Name;Status"
 ```
 
 That means:
@@ -585,6 +602,7 @@ That means:
 - the listbox stores column 1 as the bound value
 - the first column is hidden by `"0;..."`
 - the user sees the name and status columns
+- the header row shows `ID`, `Name`, and `Status`
 
 To get the selected key:
 
@@ -636,6 +654,8 @@ f.LookupSql = Join(Array( _
 f.LookupBoundColumn = 1
 f.LookupDisplayColumn = 2
 f.LookupColumnWidths = "0;2.0;1.2"""
+f.LookupShowColumnHeads = True
+f.LookupColumnHeadCaptions = "ID;Name;Status"
 f.LookupMaxRows = 2500
 ```
 
@@ -696,6 +716,8 @@ Private Sub LoadRecordPicker()
         False, _
         "", _
         "0;2.0;1.2""", _
+        True, _
+        "ID;Name;Status", _
         2500
 
 End Sub

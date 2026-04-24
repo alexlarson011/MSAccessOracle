@@ -87,6 +87,8 @@ Option Explicit
 '     LookupBoundColumn
 '     LookupDisplayColumn
 '     LookupColumnWidths
+'     LookupShowColumnHeads
+'     LookupColumnHeadCaptions
 '     LookupIncludeBlankRow
 '     LookupBlankCaption
 '     LookupMaxRows
@@ -142,6 +144,7 @@ Option Explicit
 '     f.LookupSql = "SELECT STATUS_CD, STATUS_TEXT FROM APP_STATUS_LU ORDER BY STATUS_TEXT"
 '     f.LookupBoundColumn = 1
 '     f.LookupDisplayColumn = 2
+'     f.LookupShowColumnHeads = True
 '     f.LookupIncludeBlankRow = True
 '     f.LookupMaxRows = 250
 '
@@ -224,6 +227,8 @@ Private pLookupSql As String
 Private pLookupBoundColumn As Long
 Private pLookupDisplayColumn As Long
 Private pLookupColumnWidths As String
+Private pLookupShowColumnHeads As Boolean
+Private pLookupColumnHeadCaptions As String
 Private pLookupIncludeBlankRow As Boolean
 Private pLookupBlankCaption As String
 Private pLookupMaxRows As Long
@@ -261,6 +266,8 @@ Private Sub Class_Initialize()
     pLookupBoundColumn = 1
     pLookupDisplayColumn = 2
     pLookupColumnWidths = vbNullString
+    pLookupShowColumnHeads = False
+    pLookupColumnHeadCaptions = vbNullString
     pLookupIncludeBlankRow = False
     pLookupBlankCaption = vbNullString
     pLookupMaxRows = 2500
@@ -502,6 +509,24 @@ End Property
 
 Public Property Let LookupColumnWidths(ByVal Value As String)
     pLookupColumnWidths = Trim$(Nz(Value, vbNullString))
+End Property
+
+
+Public Property Get LookupShowColumnHeads() As Boolean
+    LookupShowColumnHeads = pLookupShowColumnHeads
+End Property
+
+Public Property Let LookupShowColumnHeads(ByVal Value As Boolean)
+    pLookupShowColumnHeads = Value
+End Property
+
+
+Public Property Get LookupColumnHeadCaptions() As String
+    LookupColumnHeadCaptions = pLookupColumnHeadCaptions
+End Property
+
+Public Property Let LookupColumnHeadCaptions(ByVal Value As String)
+    pLookupColumnHeadCaptions = Trim$(Nz(Value, vbNullString))
 End Property
 
 

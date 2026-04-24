@@ -117,6 +117,7 @@
 '     f.LookupSql = "SELECT STATUS_CD, STATUS_TEXT FROM APP_STATUS_LU ORDER BY STATUS_TEXT"
 '     f.LookupBoundColumn = 1
 '     f.LookupDisplayColumn = 2
+'     f.LookupShowColumnHeads = True
 '     f.LookupIncludeBlankRow = True
 '
 ' Load an existing record:
@@ -1074,6 +1075,60 @@ Private Function Ofm_BuildBlankValueListRow( _
 
 End Function
 
+Private Function Ofm_BuildColumnHeadRow( _
+    ByVal rowData As Object, _
+    ByVal columnCount As Long, _
+    Optional ByVal columnHeadCaptions As String = "" _
+) As String
+
+    Dim captions() As String
+    Dim keys As Variant
+    Dim i As Long
+    Dim s As String
+    Dim captionValue As String
+
+    If columnCount <= 0 Then columnCount = 1
+
+    If Len(Trim$(columnHeadCaptions)) > 0 Then
+        captions = Split(columnHeadCaptions, ";")
+
+        For i = 1 To columnCount
+            If i > 1 Then s = s & ";"
+
+            If (i - 1) <= UBound(captions) Then
+                captionValue = Trim$(captions(i - 1))
+            Else
+                captionValue = vbNullString
+            End If
+
+            s = s & Ofm_ValueListCell(captionValue)
+        Next i
+
+        Ofm_BuildColumnHeadRow = s
+        Exit Function
+    End If
+
+    If rowData Is Nothing Then
+        For i = 1 To columnCount
+            If i > 1 Then s = s & ";"
+            s = s & Ofm_ValueListCell("Column " & CStr(i))
+        Next i
+
+        Ofm_BuildColumnHeadRow = s
+        Exit Function
+    End If
+
+    keys = rowData.Keys
+
+    For i = LBound(keys) To UBound(keys)
+        If i > LBound(keys) Then s = s & ";"
+        s = s & Ofm_ValueListCell(keys(i))
+    Next i
+
+    Ofm_BuildColumnHeadRow = s
+
+End Function
+
 Private Function Ofm_BuildValueListRow(ByVal rowData As Object) As String
 
     Dim keys As Variant
@@ -1109,6 +1164,7 @@ Private Sub Ofm_PrepareListControl( _
     ByVal ctl As Object, _
     ByVal columnCount As Long, _
     ByVal boundColumn As Long, _
+    Optional ByVal showColumnHeads As Boolean = False, _
     Optional ByVal columnWidths As String = "" _
 )
 
@@ -1123,7 +1179,7 @@ Private Sub Ofm_PrepareListControl( _
     On Error Resume Next
     ctl.ControlSource = vbNullString
     ctl.MultiSelect = 0
-    ctl.ColumnHeads = False
+    ctl.ColumnHeads = showColumnHeads
     ctl.ListStyle = 0
     ctl.Enabled = True
     ctl.Locked = False
@@ -1146,6 +1202,8 @@ Public Sub Ofm_LoadListControlBySql( _
     Optional ByVal includeBlankRow As Boolean = False, _
     Optional ByVal blankCaption As String = "", _
     Optional ByVal columnWidths As String = "", _
+    Optional ByVal showColumnHeads As Boolean = False, _
+    Optional ByVal columnHeadCaptions As String = "", _
     Optional ByVal maxRows As Long = 2500, _
     Optional ByVal dsn As String = "" _
 )
@@ -1181,7 +1239,15 @@ Public Sub Ofm_LoadListControlBySql( _
         columnCount = IIf(displayColumn > boundColumn, displayColumn, boundColumn)
     End If
 
-    Call Ofm_PrepareListControl(ctl, columnCount, boundColumn, columnWidths)
+    Call Ofm_PrepareListControl(ctl, columnCount, boundColumn, showColumnHeads, columnWidths)
+
+    If showColumnHeads Then
+        If rows.Count > 0 Then
+            ctl.AddItem Ofm_BuildColumnHeadRow(rows(1), columnCount, columnHeadCaptions)
+        Else
+            ctl.AddItem Ofm_BuildColumnHeadRow(Nothing, columnCount, columnHeadCaptions)
+        End If
+    End If
 
     If includeBlankRow Then
         ctl.AddItem Ofm_BuildBlankValueListRow(columnCount, displayColumn, blankCaption)
@@ -1218,6 +1284,8 @@ Public Sub Ofm_LoadLookupControl( _
         includeBlankRow:=fieldDef.LookupIncludeBlankRow, _
         blankCaption:=fieldDef.LookupBlankCaption, _
         columnWidths:=fieldDef.LookupColumnWidths, _
+        showColumnHeads:=fieldDef.LookupShowColumnHeads, _
+        columnHeadCaptions:=fieldDef.LookupColumnHeadCaptions, _
         maxRows:=fieldDef.LookupMaxRows, _
         dsn:=dsn
 
