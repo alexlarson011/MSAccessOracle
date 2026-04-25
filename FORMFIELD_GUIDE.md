@@ -400,6 +400,29 @@ That means:
 Use `DefaultValue` deliberately, especially on editable fields.
 
 
+### 6.12.1 `OracleDataType`
+
+`OracleDataType` helps the engine format saved values correctly when building
+`INSERT` and `UPDATE` SQL.
+
+The scaffold helpers populate it from Oracle metadata:
+
+```vb
+f.OracleDataType = "DATE"
+```
+
+Why this matters:
+
+- string fields save as quoted string literals
+- number fields save as numeric values
+- `DATE` fields save through `TO_DATE(...)`
+- `TIMESTAMP...` fields save through `TO_TIMESTAMP(...)`
+
+Without `OracleDataType`, the engine falls back to generic VBA value detection.
+That is fine for many values, but a text value that looks like a date should only be
+treated as an Oracle date when the field metadata says it is a date.
+
+
 ### 6.13 `ControlKind`
 
 The current engine cares most about:
@@ -549,17 +572,17 @@ lookup SQL on the class:
 
 ```vb
 Ofm_LoadListControlBySql _
-    Me, _
-    "cboStatus", _
-    "SELECT STATUS_CD, STATUS_TEXT FROM APP_STATUS_LU ORDER BY STATUS_TEXT", _
-    1, _
-    2, _
-    True, _
-    "", _
-    "0;1.5""", _
-    True, _
-    "Code;Status", _
-    2500
+    frm:=Me, _
+    controlName:="cboStatus", _
+    sSQL:="SELECT STATUS_CD, STATUS_TEXT FROM APP_STATUS_LU ORDER BY STATUS_TEXT", _
+    boundColumn:=1, _
+    displayColumn:=2, _
+    includeBlankRow:=True, _
+    blankCaption:="", _
+    columnWidths:="0;1.5""", _
+    maxRows:=2500, _
+    showColumnHeads:=True, _
+    columnHeadCaptions:="Code;Status"
 ```
 
 
@@ -606,6 +629,14 @@ f.LookupIncludeBlankRow = True
 f.LookupBlankCaption = ""
 ```
 
+If that blank choice should save as Oracle `NULL`, make the field optional and turn
+on blank-to-null normalization:
+
+```vb
+f.IsRequired = False
+f.NullIfBlank = True
+```
+
 If you want headers too:
 
 ```vb
@@ -628,20 +659,21 @@ Example:
 
 ```vb
 Ofm_LoadListControlBySql _
-    Me, _
-    "lstRecords", _
-    Join(Array( _
+    frm:=Me, _
+    controlName:="lstRecords", _
+    sSQL:=Join(Array( _
         "SELECT RECORD_ID, RECORD_NAME, STATUS_TEXT", _
         "FROM APP_RECORD_VW", _
         "ORDER BY RECORD_NAME" _
     ), vbCrLf), _
-    1, _
-    2, _
-    False, _
-    "", _
-    "0;2.0;1.2""", _
-    True, _
-    "ID;Name;Status"
+    boundColumn:=1, _
+    displayColumn:=2, _
+    includeBlankRow:=False, _
+    blankCaption:="", _
+    columnWidths:="0;2.0;1.2""", _
+    maxRows:=2500, _
+    showColumnHeads:=True, _
+    columnHeadCaptions:="ID;Name;Status"
 ```
 
 That means:
@@ -755,21 +787,21 @@ Example loader:
 Private Sub LoadRecordPicker()
 
     Ofm_LoadListControlBySql _
-        Me, _
-        "lstRecords", _
-        Join(Array( _
+        frm:=Me, _
+        controlName:="lstRecords", _
+        sSQL:=Join(Array( _
             "SELECT RECORD_ID, RECORD_NAME, STATUS_TEXT", _
             "FROM APP_RECORD_VW", _
             "ORDER BY RECORD_NAME" _
         ), vbCrLf), _
-        1, _
-        2, _
-        False, _
-        "", _
-        "0;2.0;1.2""", _
-        True, _
-        "ID;Name;Status", _
-        2500
+        boundColumn:=1, _
+        displayColumn:=2, _
+        includeBlankRow:=False, _
+        blankCaption:="", _
+        columnWidths:="0;2.0;1.2""", _
+        maxRows:=2500, _
+        showColumnHeads:=True, _
+        columnHeadCaptions:="ID;Name;Status"
 
 End Sub
 ```
@@ -1404,6 +1436,9 @@ Actual write participation still comes from:
 
 ### Print a starter field scaffold from Oracle metadata
 
+Scaffolding helpers live in `modDeveloperTools`. They are intended for Immediate
+Window use while building forms, not for runtime form behavior.
+
 If you already know the Oracle table you want to edit, you can generate a starter
 `ConfigureFields` routine directly to the Immediate Window:
 
@@ -1427,11 +1462,11 @@ What it does:
 - tries to infer a single-column primary key
 - prints a copy/paste-ready `ConfigureFields` routine
 - sets conservative starter defaults like:
-  - `OracleDataType`
-  - `Description` from column comments
-  - `IsRequired = True` for non-nullable columns
-  - `TrimOnSave = True` for string columns
-  - `NullIfBlank = True` for nullable string columns
+- `OracleDataType`
+- `Description` from column comments
+- `IsRequired = True` for non-nullable columns
+- `TrimOnSave = True` for string columns
+- `NullIfBlank = True` for nullable columns
 - adds a review note for likely `Y/N` flag columns
 
 What it does not do:
@@ -1442,6 +1477,42 @@ What it does not do:
 - solve composite primary keys automatically
 
 Treat the generated output as a starting point, not final code.
+
+### Print a starter field scaffold from SQL
+
+For highly normalized screens, you may want the form to load from a joined SQL
+statement while still saving only to one base table. Use the SQL scaffold helper
+for that shape:
+
+```vb
+Dim sSQL As String
+
+sSQL = _
+    "SELECT r.RECORD_ID, r.RECORD_NAME, r.STATUS_CD, s.STATUS_NAME " & _
+    "FROM APP_RECORD r " & _
+    "LEFT JOIN APP_STATUS s ON s.STATUS_CD = r.STATUS_CD"
+
+Ofm_Debug_PrintFieldScaffoldFromSql _
+    sSQL:=sSQL, _
+    baseTableName:="APP_RECORD", _
+    keyFieldName:="RECORD_ID"
+```
+
+The helper probes the SQL as a zero-row inline view, so it can infer the returned
+column aliases without downloading the data. If `baseTableName` is supplied,
+columns whose aliases match real base-table columns are scaffolded as editable
+fields. Joined/display-only columns are scaffolded as read-only fields with
+`LoadFieldName` set:
+
+```vb
+Set f = Ofm_AddField(mFields, "", "txtStatusName", False, False, False)
+f.LoadFieldName = "STATUS_NAME"
+```
+
+That is intentional. Review each joined or aliased column before deciding whether
+it should write to the base table. If a SQL alias represents a base-table field
+under a different name, adjust `DbFieldName`, `LoadFieldName`, `IsInsertable`,
+and `IsUpdatable` manually.
 
 ### Print a starter form-module scaffold from Oracle metadata
 

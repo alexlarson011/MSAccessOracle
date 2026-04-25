@@ -26,7 +26,9 @@ This updates:
 - `tblConn.ENV`
 - `tblConn.DSN`
 - `tblConn.SCHEMA`
-- passthrough query DSNs
+
+It does not test the DSN connection or update saved passthrough queries / linked
+tables unless you ask for those updates.
 
 If you also use Oracle ODBC linked tables and want those retargeted too, run:
 
@@ -42,9 +44,17 @@ Call OracleAdmin_SwitchEnvironment( _
 ```
 
 For stateless / passthrough-only use, the first example is usually all you need.
+If you still maintain saved passthrough query objects for admin/testing work, pass
+`updatePassthroughQueries:=True`.
 
 ## Documentation
 
 - [Using `clsOracleFormField` and `modOracleFormEngine`](./FORMFIELD_GUIDE.md)
 - [Base form pattern](./BASE_FORM_PATTERN.md)
 - [Proposed form test plan](./FORM_TEST_PLAN.md)
+
+After logging in, you can run a quick runtime smoke test from the Immediate Window:
+
+```vb
+OracleSmoke_RunRuntime
+```

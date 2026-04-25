@@ -49,6 +49,28 @@ Use three layers:
 
 These confirm the runtime Oracle session model is healthy before you blame the form.
 
+After logging in through `frmLogin`, run the built-in smoke helper from the Immediate
+Window:
+
+```vb
+OracleSmoke_RunRuntime
+```
+
+That checks:
+
+- runtime Oracle session exists
+- `SELECT USER FROM DUAL` matches the logged-in user
+- scalar query execution works
+- row materialization works
+
+You can also run this diagnostic when testing joined SQL aliases:
+
+```vb
+OracleSmoke_TestDuplicateColumnDiagnostic
+```
+
+That confirms duplicate returned column names produce a clear aliasing error.
+
 ### Test E1: login succeeds
 
 Verify:

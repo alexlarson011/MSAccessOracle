@@ -115,6 +115,9 @@
 ' Returned row dictionaries use case-insensitive key lookup, which makes them
 ' friendlier for aliased SQL and form-engine read models.
 '
+' Joined SQL should alias duplicate column names. PTQ_GetRows / PTQ_GetRow raise a
+' clear error if Oracle returns the same column name more than once.
+'
 ' Sequence helper:
 '
 '     nextId = Oracle_GetNextSequenceValue(Get_DB_Schema(), "my_seq")
@@ -400,7 +403,7 @@ Private Function PTQ_GetRowsAdo( _
             rowDict.CompareMode = vbTextCompare
 
             For lFieldIndex = LBound(vData, 1) To UBound(vData, 1)
-                rowDict.Add rs.Fields(lFieldIndex).Name, vData(lFieldIndex, lRowIndex)
+                AddRowDictValue rowDict, rs.Fields(lFieldIndex).Name, vData(lFieldIndex, lRowIndex), cModuleName & ".PTQ_GetRowsAdo"
             Next lFieldIndex
 
             rows.Add rowDict
@@ -432,6 +435,23 @@ HandleErr:
         "Details: " & Err.Description
 
 End Function
+
+Private Sub AddRowDictValue( _
+    ByRef rowDict As Object, _
+    ByVal fieldName As String, _
+    ByVal fieldValue As Variant, _
+    ByVal sourceProcName As String _
+)
+
+    If rowDict.Exists(fieldName) Then
+        Err.Raise vbObjectError + 1043, sourceProcName, _
+                  "Query returned duplicate column name '" & fieldName & "'. " & _
+                  "Alias duplicate columns so every returned field name is unique."
+    End If
+
+    rowDict.Add fieldName, fieldValue
+
+End Sub
 
 '------------------------------------------------------------------------------------
 ' tblConn getters / setters
@@ -949,7 +969,7 @@ Public Function PTQ_GetRows( _
         rowDict.CompareMode = vbTextCompare
 
         For Each fld In rs.fields
-            rowDict.Add fld.Name, fld.Value
+            AddRowDictValue rowDict, fld.Name, fld.Value, cModuleName & ".PTQ_GetRows"
         Next fld
 
         rows.Add rowDict
